@@ -110,7 +110,6 @@ pub fn part2(input: &InputType) -> OutputType {
 
     let mut card_stack = input.into_iter().cloned().collect::<VecDeque<Card>>();
 
-    //TODO: Too tired to do this.
     while let Some(card) = card_stack.pop_front() {
         //for card in card_stack {
         let mut num_matches = *match_count.get(&card.id).unwrap();
@@ -119,29 +118,18 @@ pub fn part2(input: &InputType) -> OutputType {
         }
         let cur_card_count = *card_count.get(&card.id).unwrap();
         #[cfg(test)]
-        println!("Card {} has {} matches", card.id, num_matches - 1);
+        println!(
+            "Card {} has {} matches and {} copies",
+            card.id,
+            num_matches - 1,
+            cur_card_count
+        );
         for id in card.id + 1..=(card.id + num_matches as u64) {
             #[cfg(test)]
             {
                 println!("Card {} adding copy of {} to card_count", card.id, id);
             }
-            //TODO: I'm too tired to figure this out, but I think you can do the same thing I'm
-            //doing here, by multiping the current card count and adding that many to the "stack"
-            //of cards. As opposed to literally adding a copy of the card to the stack. This should
-            //be viable since we can't "come back" to a card once we have processed it.
-
-            *card_count.entry(id).or_insert(0) += 1;
-            //Just copy the card, there is probably a fancy math way to multiply this properly, but
-            //I can't see it at 2:30 AM
-            let card = input[(id - 1) as usize].clone();
-            card_stack.push_back(card);
-            #[cfg(test)]
-            {
-                println!(
-                    "card_stack: {:?}",
-                    card_stack.iter().map(|c| c.id).collect::<Vec<u64>>()
-                );
-            }
+            *card_count.entry(id).or_insert(0) += cur_card_count;
         }
     }
 
