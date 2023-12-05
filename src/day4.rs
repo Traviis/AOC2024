@@ -112,7 +112,7 @@ pub fn part2(input: &InputType) -> OutputType {
 
     while let Some(card) = card_stack.pop_front() {
         //for card in card_stack {
-        let mut num_matches = *match_count.get(&card.id).unwrap();
+        let num_matches = *match_count.get(&card.id).unwrap();
         if num_matches == 0 {
             continue;
         }
