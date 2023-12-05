@@ -125,6 +125,11 @@ pub fn part2(input: &InputType) -> OutputType {
             {
                 println!("Card {} adding copy of {} to card_count", card.id, id);
             }
+            //TODO: I'm too tired to figure this out, but I think you can do the same thing I'm
+            //doing here, by multiping the current card count and adding that many to the "stack"
+            //of cards. As opposed to literally adding a copy of the card to the stack. This should
+            //be viable since we can't "come back" to a card once we have processed it.
+
             *card_count.entry(id).or_insert(0) += 1;
             //Just copy the card, there is probably a fancy math way to multiply this properly, but
             //I can't see it at 2:30 AM
