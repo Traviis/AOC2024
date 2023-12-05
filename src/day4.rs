@@ -99,12 +99,12 @@ pub fn part2(input: &InputType) -> OutputType {
                     .count(),
             )
         })
-        .collect::<std::collections::HashMap<u64, usize>>();
+        .collect::<HashMap<u64, usize>>();
 
     let mut card_count = input
         .iter()
         .map(|card| (card.id, 1))
-        .collect::<std::collections::HashMap<u64, u64>>();
+        .collect::<HashMap<u64, u64>>();
     // Go through each card and determine how many matches it has, then add that count to the copy
     // map; Start with 1 copy of each
 
