@@ -1,10 +1,13 @@
-
-use std::collections::HashMap;
-use itertools::Itertools as _; //just import traits
+use itertools::Itertools as _;
+use std::{
+    cmp::{max, min},
+    collections::{HashMap, VecDeque},
+    fmt::{self, Display, Formatter},
+}; //just import traits
 
 pub type SeedList = Vec<u64>;
 
-pub type InputType = (SeedList,HashMap<(Thing,Thing),Vec<Mapping>>);
+pub type InputType = (SeedList, HashMap<(Thing, Thing), Vec<Mapping>>);
 type OutputType = u64;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -19,11 +22,146 @@ pub enum Thing {
     Location,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Mapping {
+    //Also referred to as a rule
     length: u64,
     source: u64,
     dest: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Range {
+    start: u64,
+    end: u64,
+}
+
+impl Range {
+    fn segment_by_rules(&self, rules: &Vec<Mapping>) -> Vec<Range> {
+        let mut new_ranges = Vec::new();
+
+        // For each rule, determine if it falls in a range,
+        let ordered_rules = get_ordered_rules(rules);
+        //determine what rules this range falls into
+        #[cfg(test)]
+        println!("Ordered Rules: {:?}", ordered_rules);
+
+        let rules = ordered_rules
+            .iter()
+            .filter(|rule| rule.rule_applies(self))
+            .collect::<Vec<&Mapping>>();
+
+        //For each rule that applies, create a new segment
+
+        //Find the first rule we intersect with
+        //Since the rules are ordered, check if we are fully contained in the first rule
+        //If we are, then we can just apply the rule and return
+        //If we aren't, then we need to split the range into multiple, and apply the rule to the first
+        #[cfg(test)]
+        println!("Valid Rules for {:?}: {:?}", self, rules);
+
+        for rule in rules.iter() {
+            #[cfg(test)]
+            println!("Considering rule: {:?}", rule);
+            if rule.source <= self.start && rule.get_source_end() >= self.end {
+                //We are fully contained in this rule
+                new_ranges.push(rule.apply_rule(self));
+            }
+
+            if rule.source <= self.start && rule.get_source_end() < self.end
+                || rule.source > self.start && rule.get_source_end() >= self.end
+            {
+                //We are partially contained in this rule, so we need to split the range
+                new_ranges.push(rule.apply_rule(&Range {
+                    start: max(self.start, rule.source),
+                    end: min(rule.get_source_end(), self.end),
+                }));
+                //Then we need to apply the rule to the rest of the range
+            }
+        }
+
+        #[cfg(test)]
+        println!("Old Range: {:?} To Segments {:?}", self, new_ranges);
+
+        new_ranges
+    }
+}
+
+impl Mapping {
+    fn get_rule(&self) -> i64 {
+        (self.dest as i64) - (self.source as i64)
+    }
+
+    fn rule_applies(&self, range: &Range) -> bool {
+        self.source <= range.start && range.start <= self.get_source_end()
+            || self.source <= range.end && range.end <= self.get_source_end()
+    }
+
+    fn apply_rule(&self, range: &Range) -> Range {
+        Range {
+            start: ((range.start as i64) + self.get_rule()) as u64,
+            end: ((range.end as i64) + self.get_rule()) as u64,
+        }
+    }
+
+    fn get_source_end(&self) -> u64 {
+        ((self.source as i64 + self.length as i64) - 1) as u64
+    }
+}
+
+impl Display for Mapping {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "R[{}..{}] ({})", self.source, self.dest, self.get_rule())
+    }
+}
+
+impl fmt::Debug for Mapping {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "R[{}..{}] ({})",
+            self.source,
+            self.get_source_end(),
+            self.get_rule()
+        )
+    }
+}
+
+/// Also generate the default +0 rules
+fn get_ordered_rules(rules: &Vec<Mapping>) -> Vec<Mapping> {
+    let mut ordered_rules = rules.clone();
+    ordered_rules.sort_by_key(|x| x.source);
+
+    //Get the first, and last rules, and add the default rules
+    //NOTE: THIS ASSUMES THAT RULES DON'T OVERLAP AND ARE CONTINGIOUS
+
+    //Sick nasty clone
+    let first_rule = ordered_rules.first().unwrap().clone();
+    let last_rule = ordered_rules.last().unwrap().clone();
+
+    //If the contigous range thought doesn't hold, we will have to geenerate ranges in between
+    //those for the default rules
+
+    if first_rule.source > 0 {
+        ordered_rules.insert(
+            0,
+            Mapping {
+                source: 0,
+                length: first_rule.source, //Go up to the start of the first rule
+                dest: 0,
+            },
+        );
+    }
+
+    if last_rule.get_source_end() < std::u64::MAX {
+        ordered_rules.push(Mapping {
+            source: last_rule.get_source_end() + 1,
+            length: std::u64::MAX - last_rule.get_source_end(), //Go up to the start of the first rule
+            dest: last_rule.get_source_end() + 1,
+        });
+    }
+
+    ordered_rules
 }
 
 #[aoc_generator(day5)]
@@ -56,7 +194,8 @@ fn day5_parse(input: &str) -> InputType {
         (Thing::Water, Thing::Light),
         (Thing::Light, Thing::Temperature),
         (Thing::Temperature, Thing::Humidity),
-        (Thing::Humidity, Thing::Location)];
+        (Thing::Humidity, Thing::Location),
+    ];
 
     lines.next(); //Initial Space
 
@@ -81,14 +220,11 @@ fn day5_parse(input: &str) -> InputType {
             });
             //#[cfg(test)]
             //println!("{:?} -> {:?}: {:?}", cur_map.0, cur_map.1, number_map.last().unwrap());
-
-
         }
         mappings.insert(cur_map, number_map);
     }
 
     (seeds, mappings)
-
 }
 
 #[aoc(day5, part1)]
@@ -103,32 +239,38 @@ pub fn part1(input: &InputType) -> OutputType {
         (Thing::Water, Thing::Light),
         (Thing::Light, Thing::Temperature),
         (Thing::Temperature, Thing::Humidity),
-        (Thing::Humidity, Thing::Location)];
+        (Thing::Humidity, Thing::Location),
+    ];
 
-    seeds.iter().map(|seed| {
-        let mut cur_value = *seed;
-        for current_map_type in &map_order {
-            let current_map = mappings.get(&current_map_type).unwrap();
-            // Now that we have the current translation map, we need to see if the current seed
-            // is in the current map, if it is, then we just translate it and move on to the
-            // next map, if it's not, we assume it's the same value
-            // Be naive for now, and assume that there isn't a partial range
-            let found_mapping = current_map.iter().find(|x| x.source <= cur_value && x.source + x.length > cur_value);
+    seeds
+        .iter()
+        .map(|seed| {
+            let mut cur_value = *seed;
+            for current_map_type in &map_order {
+                let current_map = mappings.get(&current_map_type).unwrap();
+                // Now that we have the current translation map, we need to see if the current seed
+                // is in the current map, if it is, then we just translate it and move on to the
+                // next map, if it's not, we assume it's the same value
+                // Be naive for now, and assume that there isn't a partial range
+                let found_mapping = current_map
+                    .iter()
+                    .find(|x| x.source <= cur_value && x.source + x.length > cur_value);
 
-            let mapped_value = match found_mapping {
-                Some(n) => cur_value - n.source + n.dest,
-                None => cur_value,
-            };
+                let mapped_value = match found_mapping {
+                    Some(n) => cur_value - n.source + n.dest,
+                    None => cur_value,
+                };
+                #[cfg(test)]
+                println!("{:?} -> {:?} -> {:?}", seed, current_map_type, mapped_value);
+                cur_value = mapped_value
+            }
             #[cfg(test)]
-            println!("{:?} -> {:?} -> {:?}", seed, current_map_type, mapped_value);
-            cur_value = mapped_value
-        }
-        #[cfg(test)]
-        println!("Seed {:?} -> Location {:?}", seed, cur_value);
+            println!("Seed {:?} -> Location {:?}", seed, cur_value);
 
-        cur_value
+            cur_value
         })
-.min().unwrap()
+        .min()
+        .unwrap()
 }
 
 #[aoc(day5, part2)]
@@ -136,25 +278,50 @@ pub fn part2(input: &InputType) -> OutputType {
     let (raw_seeds_ranges, mappings) = input;
     //The seeds themselves are actually ranges
 
-    let seed_ranges = raw_seeds_ranges.iter().chunks(2).into_iter().map(|mut chunk| {
-        let start = chunk.next().unwrap();
-        let end = chunk.next().unwrap();
-        (*start, start+end-1)
-    }).collect::<Vec<(u64,u64)>>();
+    let mut ranges = raw_seeds_ranges
+        .iter()
+        .chunks(2)
+        .into_iter()
+        .map(|mut chunk| {
+            let start = chunk.next().unwrap();
+            let end = chunk.next().unwrap();
+            Range {
+                start: *start,
+                end: start + end - 1,
+            }
+        })
+        .collect::<VecDeque<Range>>();
+
+    let map_order = vec![
+        (Thing::Seed, Thing::Soil),
+        (Thing::Soil, Thing::Fertilizer),
+        (Thing::Fertilizer, Thing::Water),
+        (Thing::Water, Thing::Light),
+        (Thing::Light, Thing::Temperature),
+        (Thing::Temperature, Thing::Humidity),
+        (Thing::Humidity, Thing::Location),
+    ];
+
+    // Iterate through the seeds and the current level, but for each level, you need to find all the bisections and the rules
+    for current_map_type in &map_order {
+        #[cfg(test)]
+        println!("Current Map: {:?}", current_map_type);
+        let current_maps = mappings.get(&current_map_type).unwrap();
+        let new_ranges = ranges.iter().map(|range| {
+            //Map each range to its new values, this means every range can become one or more ranges on the next level
+            //For each range, determine which rules apply to it (which ranges it's within)
+            range.segment_by_rules(current_maps)
+        });
+
+        #[cfg(test)]
+        println!("Orig Range: {:?} -> Ranges: {:?}", ranges, new_ranges);
+        ranges = new_ranges.flatten().collect::<VecDeque<Range>>();
+    }
 
     #[cfg(test)]
-    println!("Seed Ranges: {:?}", seed_ranges);
+    println!("Final Ranges: {:?}", ranges);
 
-    //These ranges will be too large, but as a naive approach, you could just back feed those seed numbers into part1
-
-    let seeds = seed_ranges.iter().flat_map(|(start,end)| {
-        (*start..=*end).collect::<Vec<u64>>()
-    }).collect::<Vec<u64>>();
-
-    let cloned_mappings = mappings.clone();
-    let new_input = (seeds, cloned_mappings);
-    part1(&new_input)
-
+    ranges.iter().map(|range| range.start).min().unwrap()
 }
 
 #[cfg(test)]
@@ -164,7 +331,6 @@ mod tests {
 
     fn get_test_input() -> &'static str {
         "seeds: 79 14 55 13
-
             seed-to-soil map:
             50 98 2
             52 50 48
@@ -196,6 +362,22 @@ mod tests {
             humidity-to-location map:
             60 56 37
             56 93 4"
+    }
+
+    #[test]
+    fn test_rule_sanity() {
+        let rule = Mapping {
+            source: 50,
+            length: 2,
+            dest: 52,
+        };
+
+        println!("Rule: {:?}", rule);
+        assert_eq!(rule.get_rule(), 2);
+        assert_eq!(
+            rule.apply_rule(&Range { start: 55, end: 67 }),
+            Range { start: 57, end: 69 }
+        );
     }
 
     #[test]
