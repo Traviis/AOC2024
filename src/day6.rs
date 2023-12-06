@@ -6,6 +6,7 @@ pub struct Race {
     time: u64,
     distance: u64,
 }
+
 #[aoc_generator(day6)]
 fn day6_parse(input: &str) -> InputType {
     let mut lines = input.lines();
@@ -72,6 +73,7 @@ pub fn part2(input: &InputType) -> OutputType {
             time: 0,
             distance: 0,
         },
+        //Needlessly complicated way to stringify the numbers together
         |mut acc, race| {
             acc.time = (acc.time.to_string() + &race.time.to_string())
                 .parse::<u64>()
