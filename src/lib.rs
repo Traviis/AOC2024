@@ -7,6 +7,7 @@ extern crate aoc_runner_derive;
 #[macro_use]
 extern crate lazy_static;
 
+extern crate colored;
 extern crate itertools;
 extern crate rayon;
 extern crate regex;

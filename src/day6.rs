@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+use colored::Colorize as _;
+
 type InputType = Vec<Race>;
 type OutputType = u64;
 
@@ -35,6 +38,47 @@ fn day6_parse(input: &str) -> InputType {
         .collect()
 }
 
+fn the_fancy_math_way(race: &Race) -> u64 {
+    // (race_time - hold_time) * hold_time > record
+    // hold_time * race_time - hold_time^2 - record > 0
+    // -1 * hold_time^2 + race_time * hold_time + -record > 0
+    // ax^2 + bc + c = 0
+    // x = hold_time
+    // a = -1
+    // b = race_time
+    // c = -record
+
+    let t = race.time as f64;
+    // Need to beat the record by 1 millisecond
+    let d = race.distance as f64 + 1.0;
+    let root = (t.powi(2) - 4.0 * d).sqrt();
+    let a = (((-t - root) / -2.0).floor()) as usize;
+    let b = (((-t + root) / -2.0).ceil()) as usize;
+    #[cfg(test)]
+    {
+        println!(
+            " a: {}, b: {}, root: {}, d: {}, t: {}",
+            a.to_string().red(),
+            b.to_string().blue(),
+            root.to_string().green(),
+            d.to_string().yellow(),
+            t.to_string().purple()
+        );
+    }
+    (a - b + 1) as u64
+}
+
+#[aoc(day6, part1, fancy_math)]
+pub fn part1_math(input: &InputType) -> OutputType {
+    input.iter().map(|race| the_fancy_math_way(race)).product()
+}
+
+#[aoc(day6, part2, fancy_math)]
+pub fn part2_math(input: &InputType) -> OutputType {
+    let bad_kerning = unkernify(input);
+    part1_math(&bad_kerning)
+}
+
 #[aoc(day6, part1)]
 pub fn part1(input: &InputType) -> OutputType {
     #[cfg(test)]
@@ -66,8 +110,7 @@ pub fn part1(input: &InputType) -> OutputType {
         .product()
 }
 
-#[aoc(day6, part2)]
-pub fn part2(input: &InputType) -> OutputType {
+fn unkernify(input: &InputType) -> InputType {
     let bad_kerning = input.iter().fold(
         Race {
             time: 0,
@@ -84,8 +127,13 @@ pub fn part2(input: &InputType) -> OutputType {
             acc
         },
     );
+    vec![bad_kerning]
+}
 
-    part1(&vec![bad_kerning])
+#[aoc(day6, part2)]
+pub fn part2(input: &InputType) -> OutputType {
+    let bad_kerning = unkernify(input);
+    part1(&bad_kerning)
 }
 
 #[cfg(test)]
@@ -106,5 +154,15 @@ Distance:  9  40  200"
     #[test]
     fn day6_part2() {
         assert_eq!(part2(&day6_parse(get_test_input())), 71503);
+    }
+
+    #[test]
+    fn day6_part1_math() {
+        assert_eq!(part1_math(&day6_parse(get_test_input())), 288);
+    }
+
+    #[test]
+    fn day6_part2_math() {
+        assert_eq!(part2_math(&day6_parse(get_test_input())), 71503);
     }
 }
