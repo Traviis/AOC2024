@@ -1,4 +1,5 @@
-#![allow(unused_imports)]
+
+#[allow(unused_imports)]
 use colored::Colorize as _;
 
 type InputType = Vec<Race>;

@@ -3,7 +3,6 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use colored::ColoredString;
 #[allow(unused_imports)]
 use colored::Colorize as _;
 
