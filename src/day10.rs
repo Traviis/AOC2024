@@ -82,7 +82,7 @@ fn day10_parse(input: &str) -> InputType {
     let dx = next_segment.0 - start.0;
     let dy = next_segment.1 - start.1;
 
-    let start_type = match (dx, dy) {
+    match (dx, dy) {
         //I just moved east, so determine what valid pipes end in east and start from direction
         (1, 0) => match direction {
             Dir::North => map.insert(*start, Segment::NE),
@@ -256,6 +256,7 @@ fn valid_next_segments(
     valid_segments
 }
 
+#[allow(dead_code)]
 fn dump_full_map(map: &Map) {
     let max_x = map.keys().map(|(x, _)| x).max().unwrap();
     let max_y = map.keys().map(|(_, y)| y).max().unwrap();

@@ -62,6 +62,7 @@ pub fn part1(input: &InputType) -> OutputType {
     let mut instructions = input.instructions.iter().cycle();
 
     let mut current_node = input.node_map.get("AAA").unwrap();
+    #[allow(unused_assignments)]
     let mut current_node_name = "AAA";
     let mut steps = 0;
 
