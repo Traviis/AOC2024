@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use colored::Colorize as _;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub type Coordinate = (i64, i64);
 
@@ -66,24 +66,21 @@ fn day10_parse(input: &str) -> InputType {
         .unwrap();
 
     //Let's also replace the start pipe with the proper segment
-    let mut valid_next_segments_found = valid_next_segments(&map, None, start);
+    let valid_next_segments_found = valid_next_segments(&map, None, start);
 
-    //Cheat and sort this so I can cut down on my combinations
-
-    //Pick the first one and to determine a direction arbitrarily, then see which piece fits
-
-    let start_segment = valid_next_segments_found.pop().unwrap();
+    let mut start_segmetns_iter = valid_next_segments_found.iter();
+    let start_segment = start_segmetns_iter.next().unwrap();
     //Find the start one from this neighbor
 
-    let next_segment = valid_next_segments_found.pop().unwrap();
+    let next_segment = start_segmetns_iter.next().unwrap();
 
     let direction = determine_direction_from(Some(&start_segment), &start);
 
     let dx = next_segment.0 - start.0;
     let dy = next_segment.1 - start.1;
 
+    //This seems like it should be easier, but... i'm not sure
     match (dx, dy) {
-        //I just moved east, so determine what valid pipes end in east and start from direction
         (1, 0) => match direction {
             Dir::North => map.insert(*start, Segment::NE),
             Dir::South => map.insert(*start, Segment::SE),
@@ -114,15 +111,6 @@ fn day10_parse(input: &str) -> InputType {
         },
         _ => unreachable!(),
     };
-
-    // Vertical,   // |
-    // Horizontal, // -
-    // NE,         // L
-    // NW,         // J
-    // SW,         // 7
-    // SE,         // F
-    // Start,      // S
-    // Empty,
 
     #[cfg(test)]
     {
@@ -162,9 +150,9 @@ fn valid_next_segments(
     map: &Map,
     previous: Option<&Coordinate>,
     current: &Coordinate,
-) -> Vec<Coordinate> {
+) -> HashSet<Coordinate> {
     //Iterate through the cardinal directions, and find the next valid segments
-    let mut valid_segments = Vec::new();
+    let mut valid_segments = HashSet::new();
     let (x, y) = current;
     //My map coordinates are inverted , up is actually lower y values
 
@@ -173,35 +161,35 @@ fn valid_next_segments(
     let current_segment = map.get(current).unwrap();
 
     match invalid_next_path {
-        Dir::Center => (),
+        Dir::Center => true,
         Dir::North => {
             //This means I came from the north, so depending on what type I am, I go a certain direction
             match current_segment {
-                Segment::Vertical => valid_segments.push((*x, *y + 1)),
-                Segment::NE => valid_segments.push((*x + 1, *y)),
-                Segment::NW => valid_segments.push((*x - 1, *y)),
-                _ => (),
+                Segment::Vertical => valid_segments.insert((*x, *y + 1)),
+                Segment::NE => valid_segments.insert((*x + 1, *y)),
+                Segment::NW => valid_segments.insert((*x - 1, *y)),
+                _ => true,
             }
         }
         Dir::South => match current_segment {
-            Segment::Vertical => valid_segments.push((*x, *y - 1)),
-            Segment::SE => valid_segments.push((*x + 1, *y)),
-            Segment::SW => valid_segments.push((*x - 1, *y)),
-            _ => (),
+            Segment::Vertical => valid_segments.insert((*x, *y - 1)),
+            Segment::SE => valid_segments.insert((*x + 1, *y)),
+            Segment::SW => valid_segments.insert((*x - 1, *y)),
+            _ => true,
         },
         Dir::East => match current_segment {
-            Segment::Horizontal => valid_segments.push((*x - 1, *y)),
-            Segment::NE => valid_segments.push((*x, *y - 1)),
-            Segment::SE => valid_segments.push((*x, *y + 1)),
-            _ => (),
+            Segment::Horizontal => valid_segments.insert((*x - 1, *y)),
+            Segment::NE => valid_segments.insert((*x, *y - 1)),
+            Segment::SE => valid_segments.insert((*x, *y + 1)),
+            _ => true,
         },
         Dir::West => match current_segment {
-            Segment::Horizontal => valid_segments.push((*x + 1, *y)),
-            Segment::NW => valid_segments.push((*x, *y - 1)),
-            Segment::SW => valid_segments.push((*x, *y + 1)),
-            _ => (),
+            Segment::Horizontal => valid_segments.insert((*x + 1, *y)),
+            Segment::NW => valid_segments.insert((*x, *y - 1)),
+            Segment::SW => valid_segments.insert((*x, *y + 1)),
+            _ => true,
         },
-    }
+    };
 
     if valid_segments.len() != 0 {
         return valid_segments;
@@ -212,9 +200,9 @@ fn valid_next_segments(
     if invalid_next_path != Dir::North {
         if let Some(segment) = map.get(&(*x, n_y)) {
             match segment {
-                Segment::Vertical | Segment::SW | Segment::SE => valid_segments.push((*x, n_y)),
-                _ => (),
-            }
+                Segment::Vertical | Segment::SW | Segment::SE => valid_segments.insert((*x, n_y)),
+                _ => false,
+            };
         }
     }
 
@@ -223,9 +211,9 @@ fn valid_next_segments(
     if invalid_next_path != Dir::South {
         if let Some(segment) = map.get(&(*x, s_y)) {
             match segment {
-                Segment::Vertical | Segment::NW | Segment::NE => valid_segments.push((*x, s_y)),
-                _ => (),
-            }
+                Segment::Vertical | Segment::NW | Segment::NE => valid_segments.insert((*x, s_y)),
+                _ => false,
+            };
         }
     }
 
@@ -235,10 +223,10 @@ fn valid_next_segments(
     if invalid_next_path != Dir::West {
         if let Some(segment) = map.get(&(w_x, *y)) {
             match segment {
-                Segment::Horizontal | Segment::NE | Segment::SE => valid_segments.push((w_x, *y)),
+                Segment::Horizontal | Segment::NE | Segment::SE => valid_segments.insert((w_x, *y)),
 
-                _ => (),
-            }
+                _ => false,
+            };
         }
     }
 
@@ -247,9 +235,9 @@ fn valid_next_segments(
     if invalid_next_path != Dir::East {
         if let Some(segment) = map.get(&(e_x, *y)) {
             match segment {
-                Segment::Horizontal | Segment::NW | Segment::SW => valid_segments.push((e_x, *y)),
-                _ => (),
-            }
+                Segment::Horizontal | Segment::NW | Segment::SW => valid_segments.insert((e_x, *y)),
+                _ => false,
+            };
         }
     }
 
@@ -260,10 +248,20 @@ fn valid_next_segments(
 fn dump_full_map(map: &Map) {
     let max_x = map.keys().map(|(x, _)| x).max().unwrap();
     let max_y = map.keys().map(|(_, y)| y).max().unwrap();
-    dump_map(&Vec::new(), &Vec::new(), (0, 0), (*max_x, *max_y), map);
+    dump_map(
+        &HashSet::new(),
+        &HashSet::new(),
+        (0, 0),
+        (*max_x, *max_y),
+        map,
+    );
 }
 
-fn dump_map_containing_paths(path: &Vec<Coordinate>, pos_path: &Vec<Coordinate>, map: &Map) {
+fn dump_map_containing_paths(
+    path: &HashSet<Coordinate>,
+    pos_path: &HashSet<Coordinate>,
+    map: &Map,
+) {
     let min_y = path.iter().map(|(_, y)| y).min().unwrap();
     let min_x = path.iter().map(|(x, _)| x).min().unwrap();
     let max_y = path.iter().map(|(_, y)| y).max().unwrap();
@@ -279,8 +277,8 @@ fn dump_map_containing_paths(path: &Vec<Coordinate>, pos_path: &Vec<Coordinate>,
 }
 
 fn dump_map(
-    path: &Vec<Coordinate>,
-    pos_path: &Vec<Coordinate>,
+    path: &HashSet<Coordinate>,
+    pos_path: &HashSet<Coordinate>,
     top_left: Coordinate,
     bot_right: Coordinate,
     map: &Map,
@@ -356,18 +354,18 @@ pub fn solver(input: &InputType, find_area: bool) -> OutputType {
     // }
 
     //For visualization
-    let mut path = Vec::new();
-    path.push((cur_x, cur_y));
+    let mut path = HashSet::new();
+    path.insert((cur_x, cur_y));
 
     let mut previous_coordinate = (cur_x, cur_y); //Start
     (cur_x, cur_y) = *next_segments.iter().next().unwrap();
-    path.push((cur_x, cur_y));
+    path.insert((cur_x, cur_y));
     distance_travelled += 1;
 
     loop {
         let next_segments = valid_next_segments(map, Some(&previous_coordinate), &(cur_x, cur_y));
         if next_segments.len() != 1 {
-            path.push((cur_x, cur_y));
+            path.insert((cur_x, cur_y));
             println!("next segments {:?}, {}", next_segments, distance_travelled);
             dump_map_containing_paths(&path, &next_segments, map);
             panic!();
@@ -394,7 +392,7 @@ pub fn solver(input: &InputType, find_area: bool) -> OutputType {
             break;
         }
         previous_coordinate = (cur_x, cur_y);
-        path.push((*n_x, *n_y));
+        path.insert((*n_x, *n_y));
         (cur_x, cur_y) = (*n_x, *n_y);
     }
 
@@ -414,7 +412,7 @@ pub fn solver(input: &InputType, find_area: bool) -> OutputType {
 
     let mut ground_tiles = 0;
 
-    let mut loop_grounds = Vec::new();
+    let mut loop_grounds = HashSet::new();
 
     // Apparently, this is a knot theory problem, which... sucks
     // For part 2, I replaced the parts of the loop that had a connection to the row above by ! and
@@ -440,7 +438,7 @@ pub fn solver(input: &InputType, find_area: bool) -> OutputType {
                 //do nothing
             } else if loop_count % 2 == 1 {
                 ground_tiles += 1;
-                loop_grounds.push((x, y));
+                loop_grounds.insert((x, y));
             }
         } //end x
     } //end y
