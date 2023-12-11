@@ -1,19 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-type InputType = HashMap<(u64, u64), Thing>;
+type InputType = HashSet<(u64, u64)>;
 type OutputType = u64;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Thing {
-    Galaxy, // #
-    Empty,  // .
-}
 
 fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     //For every empty row and column, add a new empty row and column
     let mut new_input = input.clone();
 
-    let max_x = *input.keys().map(|(x, _)| x).max().unwrap() as u64;
+    let max_x = *input.iter().map(|(x, _)| x).max().unwrap() as u64;
     let max_y = input.len() as u64;
 
     let mut expanded_rows = Vec::new();
@@ -23,11 +18,9 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     for y in 0..=max_y {
         let mut galaxy_in_row = false;
         for x in 0..=max_x {
-            if let Some(thing) = new_input.get(&(x, y as u64)) {
-                if let Thing::Galaxy = thing {
-                    galaxy_in_row = true;
-                    break;
-                }
+            if let Some(_) = new_input.get(&(x, y as u64)) {
+                galaxy_in_row = true;
+                break;
             }
         }
 
@@ -40,11 +33,9 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     for x in 0..=max_x {
         let mut galaxy_in_column = false;
         for y in 0..=max_y {
-            if let Some(thing) = new_input.get(&(x as u64, y)) {
-                if let Thing::Galaxy = thing {
-                    galaxy_in_column = true;
-                    break;
-                }
+            if let Some(_) = new_input.get(&(x as u64, y)) {
+                galaxy_in_column = true;
+                break;
             }
         }
         if !galaxy_in_column {
@@ -59,12 +50,10 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
         //Expand the row by expansion if there is a galaxy in the row,
         // iterate over all galaxies and see if they fit this criteria
         let y = *y as usize;
-        let valid_galaxies = input.keys().filter(|(_, y2)| *y2 >= y as u64).collect::<Vec<_>>();
+        let valid_galaxies = input.iter().filter(|(_, y2)| *y2 >= y as u64).collect::<Vec<_>>();
         for (x,y) in valid_galaxies {
-            if let Some(thing) = new_input.get(&(*x, *y)) {
-                if let Thing::Galaxy = thing {
-                    *expanded_row_galaxies.entry((*x, *y)).or_insert(0) += expansion;
-                }
+            if let Some(_) = new_input.get(&(*x, *y)) {
+                *expanded_row_galaxies.entry((*x, *y)).or_insert(0) += expansion;
             }
         }
 
@@ -72,12 +61,10 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
 
     for x in expanded_columns.iter() {
         let x = *x as usize;
-        let valid_galaxies = input.keys().filter(|(x2, _)| *x2 >= x as u64).collect::<Vec<_>>();
+        let valid_galaxies = input.iter().filter(|(x2, _)| *x2 >= x as u64).collect::<Vec<_>>();
         for (x,y) in valid_galaxies {
-            if let Some(thing) = new_input.get(&(*x, *y)) {
-                if let Thing::Galaxy = thing {
-                    *expanded_column_galaxies.entry((*x, *y)).or_insert(0) += expansion;
-                }
+            if let Some(_) = new_input.get(&(*x, *y)) {
+                *expanded_column_galaxies.entry((*x, *y)).or_insert(0) += expansion;
             }
         }
     }
@@ -92,7 +79,7 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
 
     for (coord,expansion_val) in expanded_row_galaxies {
         let new_coord = (coord.0, (coord.1 + expansion_val) as u64);
-        new_input.insert(new_coord, Thing::Galaxy);
+        new_input.insert(new_coord);
         //Check if we have any galaxies in the expanded_column_galaxies because we just moved it
         if let Some(expansion_val) = expanded_column_galaxies.get(&coord) {
             expanded_column_galaxies.insert(new_coord, *expansion_val);
@@ -102,7 +89,7 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     }
 
     for (coord,expansion_val) in expanded_column_galaxies {
-        new_input.insert(((coord.0 + expansion_val) as u64, coord.1), Thing::Galaxy);
+        new_input.insert(((coord.0 + expansion_val) as u64, coord.1));
         new_input.remove(&coord);
     }
 
@@ -111,16 +98,13 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
 
 #[cfg(test)]
 fn dump_galaxy(input: &InputType) {
-    let max_x = input.keys().map(|(x, _)| x).max().unwrap();
-    let max_y = input.keys().map(|(_, y)| y).max().unwrap();
+    let max_x = input.iter().map(|(x, _)| x).max().unwrap();
+    let max_y = input.iter().map(|(_, y)| y).max().unwrap();
 
     for y in 0..=*max_y {
         for x in 0..=*max_x {
-            if let Some(thing) = input.get(&(x, y)) {
-                match thing {
-                    Thing::Galaxy => print!("#"),
-                    Thing::Empty => print!("."),
-                }
+            if let Some(_) = input.get(&(x, y)) {
+                print!("#");
             } else {
                 print!(".");
             }
@@ -138,7 +122,7 @@ fn day11_parse(input: &str) -> InputType {
             let line = line.trim();
             line.chars().enumerate().filter_map(move |(x, c)| {
                 if c == '#' {
-                    Some(((x as u64, y as u64), Thing::Galaxy))
+                    Some((x as u64, y as u64))
                 } else {
                     None
                 }
@@ -163,10 +147,10 @@ pub fn solver(input: &InputType, expansion_rate: u64) -> OutputType {
     //could par_iter here, but it's not the slow part
     let mut seen_combo = HashSet::new();
 
-    input.keys().map(|(x,y)| {
+    input.iter().map(|(x,y)| {
 
         let mut dist = 0;
-        for (x2,y2) in input.keys() {
+        for (x2,y2) in input.iter() {
             if x == x2 && y == y2 {
                 continue;
             }
