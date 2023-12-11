@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use rayon::prelude::*;
+use std::collections::{HashMap, HashSet};
 
 type InputType = HashMap<(u64, u64), Thing>;
 type OutputType = u64;
@@ -169,6 +168,9 @@ pub fn part1(input: &InputType) -> OutputType {
 
 pub fn solver(input: &InputType, expansion_rate: u64) -> OutputType {
     let input = expand_galaxy(input,expansion_rate);
+
+    let mut seen_combo = HashSet::new();
+
     input.keys().map(|(x,y)| {
 
         let mut dist = 0;
@@ -176,13 +178,20 @@ pub fn solver(input: &InputType, expansion_rate: u64) -> OutputType {
             if x == x2 && y == y2 {
                 continue;
             }
-            dist += manhatten_distance((*x,*y), (*x2,*y2));
 
+            let mut sorted_combo = vec![(*x,*y), (*x2,*y2)];
+            sorted_combo.sort();
+            if seen_combo.contains(&sorted_combo) {
+                continue;
+            }
+
+
+            dist += manhatten_distance((*x,*y), (*x2,*y2));
+            seen_combo.insert(sorted_combo);
         }
         dist as u64
 
-    }).sum::<u64>() / 2 
-    //(I'm double counting)
+    }).sum::<u64>()
 
 }
 
