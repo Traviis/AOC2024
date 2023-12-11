@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use rayon::prelude::*;
 
 type InputType = HashMap<(u64, u64), Thing>;
 type OutputType = u64;
@@ -20,7 +21,6 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     let mut expanded_columns = Vec::new();
     
 
-    //TODO: This is slow when we have massive numbers, but the relative number of galaxies is really small, instead, iterate over the galaxies and see if any of them match up to the criteria we are looking for.
 
     for y in 0..=max_y {
         let mut galaxy_in_row = false;
@@ -59,6 +59,29 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     max_y += expanded_rows.len() as u64 * expansion;
 
 
+    //TODO: This is slow when we have massive numbers, but the relative number of galaxies is really small, instead, iterate over the galaxies and see if any of them match up to the criteria we are looking for.
+    /*
+    //DRAFT BY GALAXY
+    for y in expanded_rows.iter().rev() {
+        //Expand the row by expansion if there is a galaxy in the row,
+        // iterate over all galaxies and see if they fit this criteria
+        let y = *y as usize;
+        let valid_galaxies = input.keys().filter(|(_, y2)| *y2 >= y as u64).collect::<Vec<_>>();
+        for (x,y) in valid_galaxies {
+            if let Some(thing) = new_input.get(&(*x, *y)) {
+                if let Thing::Galaxy = thing {
+                    new_input.insert((*x, (*y as u64 + expansion) as u64), Thing::Galaxy);
+                    //remove the "old" galaxy
+                    new_input.remove(&(*x, *y));
+                }
+            }
+        }
+
+    }
+    */
+    //TODO: Replace each of th expansions with a single loop over the galaxies and see if they fit the criteria
+    // Can do 1 at a time since the test data is pretty forgiving in terms of time
+
     for y in expanded_rows.iter().rev() {
         let y = *y as usize;
         //expand row (and modify all y values  beyond this +1)
@@ -96,27 +119,7 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     new_input
 }
 
-fn galaxy_in_column(input: &InputType, x: u64) -> bool {
-    for y in 0..=*input.keys().map(|(_, y)| y).max().unwrap() {
-        if let Some(thing) = input.get(&(x, y)) {
-            if let Thing::Galaxy = thing {
-                return true;
-            }
-        }
-    }
-    false
-}
-fn galaxy_in_row(input: &InputType, y: u64) -> bool {
-    for x in 0..=*input.keys().map(|(x, _)| x).max().unwrap() {
-        if let Some(thing) = input.get(&(x, y)) {
-            if let Thing::Galaxy = thing {
-                return true;
-            }
-        }
-    }
-    false
-}
-
+#[cfg(test)]
 fn dump_galaxy(input: &InputType) {
     let max_x = input.keys().map(|(x, _)| x).max().unwrap();
     let max_y = input.keys().map(|(_, y)| y).max().unwrap();
