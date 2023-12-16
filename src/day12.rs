@@ -1,7 +1,7 @@
 type InputType = Vec<(Vec<Spring>, Vec<i64>)>;
 type OutputType = u64;
 
-enum Spring {
+pub enum Spring {
     Functional, // .
     Damaged,    // #
     Unknown,    // ?
@@ -9,11 +9,12 @@ enum Spring {
 
 #[aoc_generator(day12)]
 fn day12_parse(input: &str) -> InputType {
+/*
     input
         .lines()
         .map(|line| {
-            let sp = line.split(" ");
-            let springs = line
+            let mut sp = line.split(" ");
+            let springs = sp
                 .next()
                 .unwrap()
                 .chars()
@@ -29,9 +30,11 @@ fn day12_parse(input: &str) -> InputType {
                 .split(",")
                 .map(|s| s.parse::<i64>().unwrap());
 
-            (spring, nums)
+            (springs, nums)
         })
         .collect()
+*/
+    todo!();
 }
 
 #[aoc(day12, part1)]
