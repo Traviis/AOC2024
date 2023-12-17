@@ -33,9 +33,13 @@ impl Direction {
     }
 }
 
-fn dump_map(map: &InputType) {}
-
-fn dump_visit_map(max_x: i64, max_y: i64, map: &HashMap<Coordinate, Vec<Direction>>, under_map: &InputType, highlight: Vec<Coordinate>) {
+fn dump_visit_map(
+    max_x: i64,
+    max_y: i64,
+    map: &HashMap<Coordinate, Vec<Direction>>,
+    under_map: &InputType,
+    highlight: Vec<Coordinate>,
+) {
     //Print the map, ignoring the direction
     for y in 0..=max_y {
         for x in 0..=max_x {
@@ -43,28 +47,67 @@ fn dump_visit_map(max_x: i64, max_y: i64, map: &HashMap<Coordinate, Vec<Directio
             let mirror = map.get(&coord);
             match mirror {
                 Some(_) => {
-                    print!("{}", if highlight.contains(&coord) { "#".red() } else { "#".normal() });
+                    print!(
+                        "{}",
+                        if highlight.contains(&coord) {
+                            "#".red()
+                        } else {
+                            "#".normal()
+                        }
+                    );
                 }
-                None => {
-                    match under_map.get(&coord) {
-                        Some(Mirror::Horizontal) => {
-                            print!("{}", if highlight.contains(&coord) { "-".red() } else { "-".normal() });
-                        }
-                        Some(Mirror::Vertical) => {
-                            print!("{}", if highlight.contains(&coord) { "|".red() } else { "|".normal() });
-
-                        }
-                        Some(Mirror::ForwardDiagonal) => {
-                            print!("{}", if highlight.contains(&coord) { "/".red() } else { "/".normal() });
-                        }
-                        Some(Mirror::BackwardDiagonal) => {
-                            print!("{}", if highlight.contains(&coord) { "\\".red() } else { "\\".normal() });
-                        }
-                        None => {
-                            print!("{}", if highlight.contains(&coord) { ".".red() } else { ".".normal() });
-                        }
+                None => match under_map.get(&coord) {
+                    Some(Mirror::Horizontal) => {
+                        print!(
+                            "{}",
+                            if highlight.contains(&coord) {
+                                "-".red()
+                            } else {
+                                "-".normal()
+                            }
+                        );
                     }
-                }
+                    Some(Mirror::Vertical) => {
+                        print!(
+                            "{}",
+                            if highlight.contains(&coord) {
+                                "|".red()
+                            } else {
+                                "|".normal()
+                            }
+                        );
+                    }
+                    Some(Mirror::ForwardDiagonal) => {
+                        print!(
+                            "{}",
+                            if highlight.contains(&coord) {
+                                "/".red()
+                            } else {
+                                "/".normal()
+                            }
+                        );
+                    }
+                    Some(Mirror::BackwardDiagonal) => {
+                        print!(
+                            "{}",
+                            if highlight.contains(&coord) {
+                                "\\".red()
+                            } else {
+                                "\\".normal()
+                            }
+                        );
+                    }
+                    None => {
+                        print!(
+                            "{}",
+                            if highlight.contains(&coord) {
+                                ".".red()
+                            } else {
+                                ".".normal()
+                            }
+                        );
+                    }
+                },
             }
         }
         println!();
@@ -97,8 +140,7 @@ fn day16_parse(input: &str) -> InputType {
         .collect()
 }
 
-#[aoc(day16, part1)]
-pub fn part1(input: &InputType) -> OutputType {
+fn find_energized(input: &InputType, start: Coordinate, start_dir: Direction) -> OutputType {
     // Keep track of all tiles that have been visited and which directions they came from (if you
     // ever hit the same location at the same direction, the processing can end, because it will
     // have merged with the other light.
@@ -109,16 +151,10 @@ pub fn part1(input: &InputType) -> OutputType {
     let max_y = *input.keys().map(|(_, y)| y).max().unwrap();
 
     let mut queue = VecDeque::new();
-    queue.push_back(((-1, 0), Direction::East)); // Start at the top left corner, facing east
+    queue.push_back((start, start_dir));
 
     while let Some(((cur_x, cur_y), heading)) = queue.pop_front() {
-
-        if cur_x >= 0 && cur_x <= max_x && cur_y >= 0 && cur_y <= max_y {
-            visited
-                .entry((cur_x,cur_y))
-                .or_insert_with(Vec::new)
-                .push(heading.dir_from());
-        }
+        let current_coord = (cur_x, cur_y);
         // First see what the next tile we are going to will be
         let offset = match heading {
             Direction::North => (0, -1),
@@ -127,25 +163,21 @@ pub fn part1(input: &InputType) -> OutputType {
             Direction::West => (-1, 0),
         };
 
-        let next_coord = (cur_x + offset.0, cur_y + offset.1);
+        let next_coord = (cur_x + offset.0, cur_y + offset.1); //if straight
+        let east_coord = (cur_x + 1, cur_y);
+        let west_coord = (cur_x - 1, cur_y);
+        let north_coord = (cur_x, cur_y - 1);
+        let south_coord = (cur_x, cur_y + 1);
 
-        if next_coord.0 < 0 || next_coord.1 < 0 || next_coord.0 > max_x || next_coord.1 > max_y {
+        if cur_x < 0 || cur_x > max_x || cur_y < 0 || cur_y > max_y {
             // #[cfg(test)]
-            // println!("Hit the edge of the map, so we can stop");
-            // Hit the edge of the map, so we can stop
+            // println!("Out of bounds, so we can stop");
+            // We are out of bounds, so we can stop
             continue;
         }
 
-        // #[cfg(test)]
-        // println!(
-        //     "Starting at {:?} heading {:?} next_coord is {:?}",
-        //     (cur_x, cur_y),
-        //     dir,
-        //     next_coord
-        // );
-
         if visited
-            .get(&next_coord)
+            .get(&current_coord)
             .map(|v: &Vec<Direction>| v.contains(&heading.dir_from()))
             .unwrap_or(false)
         {
@@ -155,11 +187,17 @@ pub fn part1(input: &InputType) -> OutputType {
             continue;
         }
 
+        if cur_x >= 0 && cur_x <= max_x && cur_y >= 0 && cur_y <= max_y {
+            visited
+                .entry((cur_x, cur_y))
+                .or_insert_with(Vec::new)
+                .push(heading.dir_from());
+        }
 
-        let item_at_next_coord = input.get(&next_coord);
+        let item_at_current_coord = input.get(&current_coord);
         // #[cfg(test)]
         // println!("Item at next coord is {:?}", item_at_next_coord);
-        match item_at_next_coord {
+        match item_at_current_coord {
             Some(Mirror::Horizontal) => {
                 //If we are going east or west, we can just keep going
                 if heading == Direction::East || heading == Direction::West {
@@ -168,32 +206,32 @@ pub fn part1(input: &InputType) -> OutputType {
                     // If you are north or sourth, then create two beams going out both directions
                     // Since it splits, it doesn't matter if it came from the north or south it
                     // counts as having the same outcome
-                    queue.push_back((next_coord, Direction::East));
-                    queue.push_back((next_coord, Direction::West));
+                    queue.push_back((east_coord, Direction::East));
+                    queue.push_back((west_coord, Direction::West));
                 }
             }
             Some(Mirror::Vertical) => {
                 if heading == Direction::North || heading == Direction::South {
                     queue.push_back((next_coord, heading));
                 } else {
-                    queue.push_back((next_coord, Direction::North));
-                    queue.push_back((next_coord, Direction::South));
+                    queue.push_back((north_coord, Direction::North));
+                    queue.push_back((south_coord, Direction::South));
                 }
             }
             Some(Mirror::ForwardDiagonal) => {
                 // "/"
                 match heading {
                     Direction::North => {
-                        queue.push_back((next_coord, Direction::East));
+                        queue.push_back((east_coord, Direction::East));
                     }
                     Direction::South => {
-                        queue.push_back((next_coord, Direction::West));
+                        queue.push_back((west_coord, Direction::West));
                     }
                     Direction::East => {
-                        queue.push_back((next_coord, Direction::North));
+                        queue.push_back((north_coord, Direction::North));
                     }
                     Direction::West => {
-                        queue.push_back((next_coord, Direction::South));
+                        queue.push_back((south_coord, Direction::South));
                     }
                 }
             }
@@ -201,16 +239,16 @@ pub fn part1(input: &InputType) -> OutputType {
                 // "\"
                 match heading {
                     Direction::North => {
-                        queue.push_back((next_coord, Direction::West));
+                        queue.push_back((west_coord, Direction::West));
                     }
                     Direction::South => {
-                        queue.push_back((next_coord, Direction::East));
+                        queue.push_back((east_coord, Direction::East));
                     }
                     Direction::East => {
-                        queue.push_back((next_coord, Direction::South));
+                        queue.push_back((south_coord, Direction::South));
                     }
                     Direction::West => {
-                        queue.push_back((next_coord, Direction::North));
+                        queue.push_back((north_coord, Direction::North));
                     }
                 }
             }
@@ -219,22 +257,48 @@ pub fn part1(input: &InputType) -> OutputType {
             }
         }
 
-        // if visited.len() > 3  {
-        //     println!("Visited {} tiles",visited.len());
-        //     break
-        // }
         #[cfg(test)]
-        dump_visit_map(max_x, max_y, &visited, input, queue.clone().into_iter().map(|(c, _)| c).collect());
+        dump_visit_map(
+            max_x,
+            max_y,
+            &visited,
+            input,
+            queue.clone().into_iter().map(|(c, _)| c).collect(),
+        );
     }
     #[cfg(test)]
-    dump_visit_map(max_x,max_y,&visited, input, Vec::new());
+    dump_visit_map(max_x, max_y, &visited, input, Vec::new());
 
     visited.len() as u64
 }
 
+#[aoc(day16, part1)]
+pub fn part1(input: &InputType) -> OutputType {
+    find_energized(input, (0, 0), Direction::East)
+}
+
 #[aoc(day16, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    todo!();
+    let mut starting_points: Vec<(Coordinate, Direction)> = Vec::new();
+    //Try from every starting point, and find the max
+    let max_x = *input.keys().map(|(x, _)| x).max().unwrap();
+    let max_y = *input.keys().map(|(_, y)| y).max().unwrap();
+
+    for x in 0..=max_x {
+        starting_points.push(((x, 0), Direction::South));
+        starting_points.push(((x, max_y), Direction::North));
+    }
+
+    for y in 0..=max_y {
+        starting_points.push(((0, y), Direction::East));
+        starting_points.push(((max_x, y), Direction::West));
+    }
+
+    starting_points
+        .into_iter()
+        .map(|(coord, dir)| find_energized(input, coord, dir))
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -262,6 +326,6 @@ mod tests {
 
     #[test]
     fn day16_part2() {
-        assert_eq!(part2(&day16_parse(get_test_input())), 0);
+        assert_eq!(part2(&day16_parse(get_test_input())), 51);
     }
 }
