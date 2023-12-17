@@ -112,6 +112,13 @@ pub fn part1(input: &InputType) -> OutputType {
     queue.push_back(((-1, 0), Direction::East)); // Start at the top left corner, facing east
 
     while let Some(((cur_x, cur_y), heading)) = queue.pop_front() {
+
+        if cur_x >= 0 && cur_x <= max_x && cur_y >= 0 && cur_y <= max_y {
+            visited
+                .entry((cur_x,cur_y))
+                .or_insert_with(Vec::new)
+                .push(heading.dir_from());
+        }
         // First see what the next tile we are going to will be
         let offset = match heading {
             Direction::North => (0, -1),
@@ -139,7 +146,7 @@ pub fn part1(input: &InputType) -> OutputType {
 
         if visited
             .get(&next_coord)
-            .map(|v: &Vec<Direction>| v.contains(&heading))
+            .map(|v: &Vec<Direction>| v.contains(&heading.dir_from()))
             .unwrap_or(false)
         {
             // #[cfg(test)]
@@ -148,6 +155,7 @@ pub fn part1(input: &InputType) -> OutputType {
             continue;
         }
 
+
         let item_at_next_coord = input.get(&next_coord);
         // #[cfg(test)]
         // println!("Item at next coord is {:?}", item_at_next_coord);
@@ -155,53 +163,25 @@ pub fn part1(input: &InputType) -> OutputType {
             Some(Mirror::Horizontal) => {
                 //If we are going east or west, we can just keep going
                 if heading == Direction::East || heading == Direction::West {
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(heading.dir_from());
                     queue.push_back((next_coord, heading));
                 } else {
                     // If you are north or sourth, then create two beams going out both directions
                     // Since it splits, it doesn't matter if it came from the north or south it
                     // counts as having the same outcome
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(Direction::North);
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(Direction::South);
                     queue.push_back((next_coord, Direction::East));
                     queue.push_back((next_coord, Direction::West));
                 }
             }
             Some(Mirror::Vertical) => {
                 if heading == Direction::North || heading == Direction::South {
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(heading.dir_from());
                     queue.push_back((next_coord, heading));
                 } else {
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(Direction::East);
-                    visited
-                        .entry(next_coord)
-                        .or_insert(Vec::new())
-                        .push(Direction::West);
                     queue.push_back((next_coord, Direction::North));
                     queue.push_back((next_coord, Direction::South));
                 }
             }
             Some(Mirror::ForwardDiagonal) => {
                 // "/"
-                visited
-                    .entry(next_coord)
-                    .or_insert(Vec::new())
-                    .push(heading.dir_from());
                 match heading {
                     Direction::North => {
                         queue.push_back((next_coord, Direction::East));
@@ -218,10 +198,6 @@ pub fn part1(input: &InputType) -> OutputType {
                 }
             }
             Some(Mirror::BackwardDiagonal) => {
-                visited
-                    .entry(next_coord)
-                    .or_insert(Vec::new())
-                    .push(heading.dir_from());
                 // "\"
                 match heading {
                     Direction::North => {
@@ -239,10 +215,6 @@ pub fn part1(input: &InputType) -> OutputType {
                 }
             }
             None => {
-                visited
-                    .entry(next_coord)
-                    .or_insert(Vec::new())
-                    .push(heading.dir_from());
                 queue.push_back((next_coord, heading)); //Keep going in the same direction
             }
         }
@@ -251,6 +223,7 @@ pub fn part1(input: &InputType) -> OutputType {
         //     println!("Visited {} tiles",visited.len());
         //     break
         // }
+        #[cfg(test)]
         dump_visit_map(max_x, max_y, &visited, input, queue.clone().into_iter().map(|(c, _)| c).collect());
     }
     #[cfg(test)]
