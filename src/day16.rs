@@ -33,6 +33,7 @@ impl Direction {
     }
 }
 
+#[allow(dead_code)]
 fn dump_visit_map(
     max_x: i64,
     max_y: i64,

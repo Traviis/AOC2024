@@ -40,7 +40,7 @@ impl LBox {
         self.lenses
             .iter()
             .enumerate()
-            .map(|(slot, (lens, focal))| {
+            .map(|(slot, (_, focal))| {
                 let mut power = idx + 1;
                 power *= slot + 1;
                 power *= *focal as usize;
