@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{HashMap,BinaryHeap};
+use core::cmp::Reverse;
 
 type Coordinate = (i64,i64);
 type InputType = HashMap<Coordinate,i64>;
@@ -13,9 +14,32 @@ fn day17_parse(input: &str) -> InputType {
     }).collect()
 }
 
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
 #[aoc(day17, part1)]
 pub fn part1(input: &InputType) -> OutputType {
-    todo!();
+    // I think we can do some djiikstra's algorithm here
+    // Except the branches available are... dynamic? Based on the fact that we can't go in one
+    // direction for more than 3 times.
+
+    let mut last_dir = Direction::North;;
+    let mut last_dir_count = 0;
+
+    let mut unvisited : BinaryHeap<Reverse<(i64,i64)>> = BinaryHeap::new();
+
+    let mut distances : HashMap<Coordinate,i64> = input.iter().map(|(k,_)| (*k, std::i64::MAX)).collect();
+    distances.insert((0,0), 0);
+
+
+
+
+
+
 }
 
 #[aoc(day17, part2)]
