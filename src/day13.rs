@@ -74,6 +74,7 @@ fn is_reflection(
     possible_mismatches
 }
 
+#[allow(dead_code)]
 fn dump_map(map: &HashMap<(i64, i64), Land>, highlight: &Vec<(i64, i64)>) {
     let max_x = *map.keys().map(|(x, _)| x).max().unwrap();
     let max_y = *map.keys().map(|(_, y)| y).max().unwrap();

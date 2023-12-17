@@ -8,37 +8,37 @@ pub enum Spring {
 }
 
 #[aoc_generator(day12)]
-fn day12_parse(input: &str) -> InputType {
-/*
-    input
-        .lines()
-        .map(|line| {
-            let mut sp = line.split(" ");
-            let springs = sp
-                .next()
-                .unwrap()
-                .chars()
-                .map(|c| match c {
-                    '.' => Spring::Functional,
-                    '#' => Spring::Damaged,
-                    '?' => Spring::Unknown,
-                })
-                .collect::<Vec<Spring>>();
-            let nums = sp
-                .next()
-                .unwrap()
-                .split(",")
-                .map(|s| s.parse::<i64>().unwrap());
+fn day12_parse(_input: &str) -> InputType {
+    /*
+        input
+            .lines()
+            .map(|line| {
+                let mut sp = line.split(" ");
+                let springs = sp
+                    .next()
+                    .unwrap()
+                    .chars()
+                    .map(|c| match c {
+                        '.' => Spring::Functional,
+                        '#' => Spring::Damaged,
+                        '?' => Spring::Unknown,
+                    })
+                    .collect::<Vec<Spring>>();
+                let nums = sp
+                    .next()
+                    .unwrap()
+                    .split(",")
+                    .map(|s| s.parse::<i64>().unwrap());
 
-            (springs, nums)
-        })
-        .collect()
-*/
+                (springs, nums)
+            })
+            .collect()
+    */
     todo!();
 }
 
 #[aoc(day12, part1)]
-pub fn part1(input: &InputType) -> OutputType {
+pub fn part1(_input: &InputType) -> OutputType {
     //I think roughly, you can assume that you take the largest one first, and see where it's
     //possible to fit, but leaving any groups to the left by number of spacess they can fit in....
     // This seems like there is an algorithm here that I don't know.... Maybe some sort of dynamic programming?
@@ -46,7 +46,7 @@ pub fn part1(input: &InputType) -> OutputType {
 }
 
 #[aoc(day12, part2)]
-pub fn part2(input: &InputType) -> OutputType {
+pub fn part2(_input: &InputType) -> OutputType {
     todo!();
 }
 

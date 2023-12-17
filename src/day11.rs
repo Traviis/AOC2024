@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 type InputType = HashSet<(u64, u64)>;
 type OutputType = u64;
 
-
 fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
     //For every empty row and column, add a new empty row and column
     let mut new_input = input.clone();
@@ -13,7 +12,6 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
 
     let mut expanded_rows = Vec::new();
     let mut expanded_columns = Vec::new();
-
 
     for y in 0..=max_y {
         let mut galaxy_in_row = false;
@@ -50,19 +48,24 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
         //Expand the row by expansion if there is a galaxy in the row,
         // iterate over all galaxies and see if they fit this criteria
         let y = *y as usize;
-        let valid_galaxies = input.iter().filter(|(_, y2)| *y2 >= y as u64).collect::<Vec<_>>();
-        for (x,y) in valid_galaxies {
+        let valid_galaxies = input
+            .iter()
+            .filter(|(_, y2)| *y2 >= y as u64)
+            .collect::<Vec<_>>();
+        for (x, y) in valid_galaxies {
             if let Some(_) = new_input.get(&(*x, *y)) {
                 *expanded_row_galaxies.entry((*x, *y)).or_insert(0) += expansion;
             }
         }
-
     }
 
     for x in expanded_columns.iter() {
         let x = *x as usize;
-        let valid_galaxies = input.iter().filter(|(x2, _)| *x2 >= x as u64).collect::<Vec<_>>();
-        for (x,y) in valid_galaxies {
+        let valid_galaxies = input
+            .iter()
+            .filter(|(x2, _)| *x2 >= x as u64)
+            .collect::<Vec<_>>();
+        for (x, y) in valid_galaxies {
             if let Some(_) = new_input.get(&(*x, *y)) {
                 *expanded_column_galaxies.entry((*x, *y)).or_insert(0) += expansion;
             }
@@ -77,7 +80,7 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
         println!("Expanded Column Galaxies: {:?}", expanded_column_galaxies);
     }
 
-    for (coord,expansion_val) in expanded_row_galaxies {
+    for (coord, expansion_val) in expanded_row_galaxies {
         let new_coord = (coord.0, (coord.1 + expansion_val) as u64);
         new_input.insert(new_coord);
         //Check if we have any galaxies in the expanded_column_galaxies because we just moved it
@@ -88,7 +91,7 @@ fn expand_galaxy(input: &InputType, expansion: u64) -> InputType {
         new_input.remove(&coord);
     }
 
-    for (coord,expansion_val) in expanded_column_galaxies {
+    for (coord, expansion_val) in expanded_column_galaxies {
         new_input.insert(((coord.0 + expansion_val) as u64, coord.1));
         new_input.remove(&coord);
     }
@@ -128,7 +131,7 @@ fn day11_parse(input: &str) -> InputType {
                 }
             })
         })
-    .collect()
+        .collect()
 }
 
 fn manhatten_distance(a: (u64, u64), b: (u64, u64)) -> u64 {
@@ -142,37 +145,37 @@ pub fn part1(input: &InputType) -> OutputType {
 }
 
 pub fn solver(input: &InputType, expansion_rate: u64) -> OutputType {
-    let input = expand_galaxy(input,expansion_rate);
+    let input = expand_galaxy(input, expansion_rate);
 
     //could par_iter here, but it's not the slow part
     let mut seen_combo = HashSet::new();
 
-    input.iter().map(|(x,y)| {
+    input
+        .iter()
+        .map(|(x, y)| {
+            let mut dist = 0;
+            for (x2, y2) in input.iter() {
+                if x == x2 && y == y2 {
+                    continue;
+                }
 
-        let mut dist = 0;
-        for (x2,y2) in input.iter() {
-            if x == x2 && y == y2 {
-                continue;
+                let mut sorted_combo = vec![(*x, *y), (*x2, *y2)];
+                sorted_combo.sort();
+                if seen_combo.contains(&sorted_combo) {
+                    continue;
+                }
+
+                dist += manhatten_distance((*x, *y), (*x2, *y2));
+                seen_combo.insert(sorted_combo);
             }
-
-            let mut sorted_combo = vec![(*x,*y), (*x2,*y2)];
-            sorted_combo.sort();
-            if seen_combo.contains(&sorted_combo) {
-                continue;
-            }
-
-            dist += manhatten_distance((*x,*y), (*x2,*y2));
-            seen_combo.insert(sorted_combo);
-        }
-        dist as u64
-
-    }).sum::<u64>()
-
+            dist as u64
+        })
+        .sum::<u64>()
 }
 
 #[aoc(day11, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    solver(input,1000000 - 1)
+    solver(input, 1000000 - 1)
 }
 
 #[cfg(test)]
@@ -211,8 +214,8 @@ mod tests {
 .............
 .........#...
 #....#.......";
-            let input = day11_parse(get_test_input());
-        let expanded = expand_galaxy(&input,1);
+        let input = day11_parse(get_test_input());
+        let expanded = expand_galaxy(&input, 1);
         let expanded_galaxy = day11_parse(expanded_galaxy);
         println!("Input");
         dump_galaxy(&input);
@@ -230,7 +233,7 @@ mod tests {
 
     #[test]
     fn day11_part2() {
-        assert_eq!(solver(&day11_parse(get_test_input()),9), 1030);
-        assert_eq!(solver(&day11_parse(get_test_input()),99), 8410);
+        assert_eq!(solver(&day11_parse(get_test_input()), 9), 1030);
+        assert_eq!(solver(&day11_parse(get_test_input()), 99), 8410);
     }
 }
