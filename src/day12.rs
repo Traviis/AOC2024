@@ -21,6 +21,7 @@ fn day12_parse(input: &str) -> InputType {
                     '.' => Spring::Functional,
                     '#' => Spring::Damaged,
                     '?' => Spring::Unknown,
+                    _ => panic!("Invalid spring"),
                 })
                 .collect::<Vec<Spring>>();
             let nums = sp
@@ -46,10 +47,13 @@ fn recurse(springs: Vec<Spring>, nums: Vec<i64>, num_in_group: i64) -> u64 {
 
 #[aoc(day12, part1)]
 pub fn part1(input: &InputType) -> OutputType {
+    /*
     input
         .iter()
         .map(|(springs, nums)| recurse(*springs.clone(), nums.clone(), 0))
         .sum()
+    */
+    todo!()
 }
 
 #[aoc(day12, part2)]
