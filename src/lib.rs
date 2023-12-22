@@ -11,6 +11,7 @@ extern crate colored;
 extern crate itertools;
 extern crate rayon;
 extern crate regex;
+extern crate cached;
 
 pub mod day1;
 pub mod day10;

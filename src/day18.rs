@@ -172,8 +172,8 @@ pub fn part1(input: &InputType) -> OutputType {
                     //For debug, let's fill in the map area
                     map.insert((d_x, y), Tile::Dug);
                 }
-                //last_x = Some(*x);
-                last_x = None
+                last_x = Some(*x);
+                //last_x = None
 
             } else if last_x.is_none() {
                 last_x = Some(*x);
