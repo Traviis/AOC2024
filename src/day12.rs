@@ -8,41 +8,48 @@ pub enum Spring {
 }
 
 #[aoc_generator(day12)]
-fn day12_parse(_input: &str) -> InputType {
-    /*
-        input
-            .lines()
-            .map(|line| {
-                let mut sp = line.split(" ");
-                let springs = sp
-                    .next()
-                    .unwrap()
-                    .chars()
-                    .map(|c| match c {
-                        '.' => Spring::Functional,
-                        '#' => Spring::Damaged,
-                        '?' => Spring::Unknown,
-                    })
-                    .collect::<Vec<Spring>>();
-                let nums = sp
-                    .next()
-                    .unwrap()
-                    .split(",")
-                    .map(|s| s.parse::<i64>().unwrap());
+fn day12_parse(input: &str) -> InputType {
+    input
+        .lines()
+        .map(|line| {
+            let mut sp = line.split(" ");
+            let springs = sp
+                .next()
+                .unwrap()
+                .chars()
+                .map(|c| match c {
+                    '.' => Spring::Functional,
+                    '#' => Spring::Damaged,
+                    '?' => Spring::Unknown,
+                })
+                .collect::<Vec<Spring>>();
+            let nums = sp
+                .next()
+                .unwrap()
+                .split(",")
+                .map(|s| s.parse::<i64>().unwrap())
+                .collect();
 
-                (springs, nums)
-            })
-            .collect()
-    */
-    todo!();
+            (springs, nums)
+        })
+        .collect::<Vec<_>>()
+}
+
+fn recurse(springs: Vec<Spring>, nums: Vec<i64>, num_in_group: i64) -> u64 {
+    if springs.is_empty() {
+        return 0;
+    }
+    let mut solutions = 0;
+
+    solutions
 }
 
 #[aoc(day12, part1)]
-pub fn part1(_input: &InputType) -> OutputType {
-    //I think roughly, you can assume that you take the largest one first, and see where it's
-    //possible to fit, but leaving any groups to the left by number of spacess they can fit in....
-    // This seems like there is an algorithm here that I don't know.... Maybe some sort of dynamic programming?
-    todo!();
+pub fn part1(input: &InputType) -> OutputType {
+    input
+        .iter()
+        .map(|(springs, nums)| recurse(*springs.clone(), nums.clone(), 0))
+        .sum()
 }
 
 #[aoc(day12, part2)]

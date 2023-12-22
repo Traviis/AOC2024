@@ -1,17 +1,21 @@
-use std::collections::{HashMap,BinaryHeap};
-use core::cmp::Reverse;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 
-type Coordinate = (i64,i64);
-type InputType = HashMap<Coordinate,i64>;
+type Coordinate = (i64, i64);
+type InputType = HashMap<Coordinate, i64>;
 type OutputType = u64;
 
 #[aoc_generator(day17)]
 fn day17_parse(input: &str) -> InputType {
-    input.lines().enumerate().flat_map(|(y, line)| {
-        line.chars().enumerate().map(move |(x, c)| {
-            ((x as i64,y as i64),c.to_digit(10).unwrap() as i64)
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.chars()
+                .enumerate()
+                .map(move |(x, c)| ((x as i64, y as i64), c.to_digit(10).unwrap() as i64))
         })
-    }).collect()
+        .collect()
 }
 
 enum Direction {
@@ -23,23 +27,20 @@ enum Direction {
 
 #[aoc(day17, part1)]
 pub fn part1(input: &InputType) -> OutputType {
-    // I think we can do some djiikstra's algorithm here
-    // Except the branches available are... dynamic? Based on the fact that we can't go in one
-    // direction for more than 3 times.
+    //Use djikstra's algorithm but don't go over the graph as if it was jsut the graph, I need to
+    //encode the directions into a much larger graph that understands that the map is larger than
+    //just that (each node has all the possible moves from it
 
-    let mut last_dir = Direction::North;;
+    let mut last_dir = Direction::North;
     let mut last_dir_count = 0;
 
-    let mut unvisited : BinaryHeap<Reverse<(i64,i64)>> = BinaryHeap::new();
+    let mut unvisited: BinaryHeap<Reverse<(i64, i64)>> = BinaryHeap::new();
 
-    let mut distances : HashMap<Coordinate,i64> = input.iter().map(|(k,_)| (*k, std::i64::MAX)).collect();
-    distances.insert((0,0), 0);
+    let mut distances: HashMap<Coordinate, i64> =
+        input.iter().map(|(k, _)| (*k, std::i64::MAX)).collect();
+    distances.insert((0, 0), 0);
 
-
-
-
-
-
+    todo!()
 }
 
 #[aoc(day17, part2)]
