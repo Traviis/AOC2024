@@ -132,12 +132,13 @@ pub fn part1(input: &InputType) -> OutputType {
             .into_iter()
             .group_by(|&x| x)
             .into_iter()
-            .flat_map(|(key, group)|  {
+            .flat_map(|(key, group)| {
                 let count = group.count();
                 match count {
-                1 => vec![key],
-                _ => vec![key, key + count as i64 - 1],
-            }})
+                    1 => vec![key],
+                    _ => vec![key, key + count as i64 - 1],
+                }
+            })
             .collect();
 
         // #[cfg(test)]
@@ -174,7 +175,6 @@ pub fn part1(input: &InputType) -> OutputType {
                 }
                 last_x = Some(*x);
                 //last_x = None
-
             } else if last_x.is_none() {
                 last_x = Some(*x);
             }
@@ -199,8 +199,8 @@ pub fn part1(input: &InputType) -> OutputType {
     }
     */
 
-     #[cfg(test)]
-     dump_map(&map);
+    #[cfg(test)]
+    dump_map(&map);
 
     area as u64
 }

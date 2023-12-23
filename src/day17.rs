@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 type Coordinate = (i64, i64);
 type InputType = HashMap<Coordinate, i64>;
@@ -18,11 +18,28 @@ fn day17_parse(input: &str) -> InputType {
         .collect()
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
 enum Direction {
     North,
     South,
     East,
     West,
+    None,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Copy, Ord)]
+struct Node {
+    x: i64,
+    y: i64,
+    dir: Direction,
+    steps: u64,
+    heat_loss: u64,
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.heat_loss.cmp(&other.heat_loss))
+    }
 }
 
 #[aoc(day17, part1)]
@@ -31,16 +48,40 @@ pub fn part1(input: &InputType) -> OutputType {
     //encode the directions into a much larger graph that understands that the map is larger than
     //just that (each node has all the possible moves from it
 
-    let mut last_dir = Direction::North;
-    let mut last_dir_count = 0;
+    //The state map is actually (x,y,dir,steps) for each of the nodes
+    let mut seen = HashSet::new();
+    let mut prio_queue = BinaryHeap::new();
 
-    let mut unvisited: BinaryHeap<Reverse<(i64, i64)>> = BinaryHeap::new();
+    let start_node = Node {
+        x: 0,
+        y: 0,
+        dir: Direction::None,
+        steps: 0,
+        heat_loss: 0,
+    };
+    prio_queue.push(Reverse(start_node));
 
-    let mut distances: HashMap<Coordinate, i64> =
-        input.iter().map(|(k, _)| (*k, std::i64::MAX)).collect();
-    distances.insert((0, 0), 0);
+    while prio_queue.len() > 0 {
+        let Reverse(node) = prio_queue.pop().unwrap();
 
-    todo!()
+        if input.get(&(node.x, node.y)).is_none() {
+            //If you're off the map, nope
+            continue;
+        }
+
+        //hack
+
+        //We don't need to staore the heat loss,
+        if seen.contains() {
+            //If you've already been here, nope
+            continue;
+        }
+        let dir = dir.clone();
+
+        seen.insert(&(x, y, dir, steps));
+    }
+
+    0
 }
 
 #[aoc(day17, part2)]
