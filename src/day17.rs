@@ -32,8 +32,8 @@ struct Node {
     x: i64,
     y: i64,
     dir: Direction,
-    steps: u64,
-    heat_loss: u64,
+    steps: i64,
+    heat_loss: i64,
 }
 
 impl PartialOrd for Node {
@@ -44,6 +44,9 @@ impl PartialOrd for Node {
 
 #[aoc(day17, part1)]
 pub fn part1(input: &InputType) -> OutputType {
+    djik(1, 3, input)
+}
+fn djik(min_move: i64, max_move: i64, input: &InputType) -> OutputType {
     //Use djikstra's algorithm but don't go over the graph as if it was jsut the graph, I need to
     //encode the directions into a much larger graph that understands that the map is larger than
     //just that (each node has all the possible moves from it
@@ -61,32 +64,104 @@ pub fn part1(input: &InputType) -> OutputType {
     };
     prio_queue.push(Reverse(start_node));
 
+    //The destination is the bottom right
+    let max_x = *input.keys().map(|(x, _)| x).max().unwrap();
+    let max_y = *input.keys().map(|(_, y)| y).max().unwrap();
+
     while prio_queue.len() > 0 {
         let Reverse(node) = prio_queue.pop().unwrap();
 
-        if input.get(&(node.x, node.y)).is_none() {
-            //If you're off the map, nope
-            continue;
-        }
+        //Just don't put it into the queue if it's off the map
+        //if input.get(&(node.x, node.y)).is_none() {
+        //    //If you're off the map, nope
+        //    continue;
+        //}
+        #[cfg(test)]
+        println!("{:?}", node);
+        //println!("\r{} - HL {} Queue Size {}",count, node.heat_loss, prio_queue.len());
 
         //hack
 
+        //TODO: You can still move a little less?
+
+        if node.x == max_x && node.y == max_y {
+            return node.heat_loss as u64;
+        }
+
         //We don't need to staore the heat loss,
-        if seen.contains() {
+        if seen.contains(&node) {
             //If you've already been here, nope
             continue;
         }
-        let dir = dir.clone();
+        // You don't actually need the heat loss in here, but just keep it simple
+        seen.insert(node.clone());
 
-        seen.insert(&(x, y, dir, steps));
+        if node.steps < max_move && node.dir != Direction::None {
+            let mut new_node = node.clone();
+            new_node.steps += min_move;
+            match node.dir {
+                Direction::North => new_node.y -= min_move,
+                Direction::South => new_node.y += min_move,
+                Direction::East => new_node.x += min_move,
+                Direction::West => new_node.x -= min_move,
+                Direction::None => {}
+            }
+
+            let (x, y) = (new_node.x, new_node.y);
+            new_node.heat_loss += *input.get(&(x, y)).unwrap_or(&0);
+
+            if input.get(&(new_node.x, new_node.y)).is_some() {
+                prio_queue.push(Reverse(new_node));
+            }
+        }
+        //Regardless of going forward, we can also turn, let's just check each direction
+        for (dx, dy) in [(0, -min_move), (0, min_move), (min_move, 0), (-min_move, 0)].iter() {
+            //Don't go back the way you came, also don't go in the forward direction (we already did that)
+            let dx = *dx;
+            let dy = *dy;
+            match node.dir {
+                Direction::North | Direction::South => {
+                    if dx == 0 && (dy == -min_move || dy == min_move) {
+                        continue;
+                    }
+                }
+                Direction::East | Direction::West => {
+                    if dy == 0 && (dx == -min_move || dx == min_move) {
+                        continue;
+                    }
+                }
+                Direction::None => {}
+            }
+
+            let new_x = node.x + dx;
+            let new_y = node.y + dy;
+
+            //Push the other valie moves
+            let mut new_node = node.clone();
+            new_node.x = new_x;
+            new_node.y = new_y;
+            new_node.dir = match (dx, dy) {
+                (0, n) if n == -min_move => Direction::North,
+                (0, n) if n == min_move => Direction::South,
+                (n, 0) if n == min_move => Direction::East,
+                (n, 0) if n == -min_move => Direction::West,
+                _ => panic!("Invalid direction"),
+            };
+            new_node.steps = min_move;
+            new_node.heat_loss += *input.get(&(new_node.x, new_node.y)).unwrap_or(&0);
+
+            if input.get(&(new_node.x, new_node.y)).is_some() {
+                prio_queue.push(Reverse(new_node));
+            }
+        }
     }
 
-    0
+    unreachable!()
 }
 
 #[aoc(day17, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    todo!();
+    djik(4, 10, input)
 }
 
 #[cfg(test)]
@@ -112,11 +187,11 @@ mod tests {
 
     #[test]
     fn day17_part1() {
-        assert_eq!(part1(&day17_parse(get_test_input())), 0);
+        assert_eq!(part1(&day17_parse(get_test_input())), 102);
     }
 
     #[test]
     fn day17_part2() {
-        assert_eq!(part2(&day17_parse(get_test_input())), 0);
+        assert_eq!(part2(&day17_parse(get_test_input())), 94);
     }
 }
