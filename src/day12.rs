@@ -16,7 +16,7 @@ fn day12_parse(input: &str) -> InputType {
         .lines()
         .map(|line| {
             let mut sp = line.split(" ");
-            let mut springs = sp
+            let springs = sp
                 .next()
                 .unwrap()
                 .chars()

@@ -45,14 +45,15 @@ fn day18_parse(input: &str) -> InputType {
 }
 
 //Get the polygon that is the border of the map
-fn get_sparse_border(input: &InputType) -> (Vec<(i64, i64)>,i64) {
+fn get_sparse_border(input: &InputType) -> (Vec<(i64, i64)>, i64) {
+    let mut cur_x = 0;
+    let mut cur_y = 0;
 
-        let mut cur_x = 0;
-        let mut cur_y = 0;
+    let mut boundary_points = 0;
 
-        let mut boundary_points = 0;
-
-        let mut map = input.iter().map(|inst| {
+    let mut map = input
+        .iter()
+        .map(|inst| {
             match inst.direction {
                 Direction::Up => cur_y += inst.steps as i64,
                 Direction::Down => cur_y -= inst.steps as i64,
@@ -60,14 +61,13 @@ fn get_sparse_border(input: &InputType) -> (Vec<(i64, i64)>,i64) {
                 Direction::Right => cur_x += inst.steps as i64,
             }
             boundary_points += inst.steps;
-            (cur_x,cur_y)
-        }).collect::<Vec<(i64,i64)>>();
+            (cur_x, cur_y)
+        })
+        .collect::<Vec<(i64, i64)>>();
 
-        //Push 0,0 onto the front
-        map.insert(0,(0,0));
-        (map, boundary_points as i64)
-
-
+    //Push 0,0 onto the front
+    map.insert(0, (0, 0));
+    (map, boundary_points as i64)
 }
 
 #[aoc(day18, part1)]
@@ -77,14 +77,13 @@ pub fn part1(input: &InputType) -> OutputType {
 
     let (map, boundary_points) = get_sparse_border(input);
 
-
     //Shoelace formula is .5 * abs(sum(x_i*y_i+1 - x_i+1*y_i))
     //https://en.wikipedia.org/wiki/Shoelace_formula
 
     //Turns out we don't care about the color, just the shape
 
     let n = map.len();
-    let mut area : f64 = 0.0;
+    let mut area: f64 = 0.0;
 
     for i in 0..n {
         let j = (i + 1) % n;
@@ -98,11 +97,9 @@ pub fn part1(input: &InputType) -> OutputType {
 
     //picks theorum
     //https://en.wikipedia.org/wiki/Pick%27s_theorem
-    let i = (area - (boundary_points/2)) + 1;
+    let i = (area - (boundary_points / 2)) + 1;
 
     (i + boundary_points) as u64
-
-
 
     //This works, but it's really slow, instead let's use the shoelace formula
     /*
@@ -129,7 +126,7 @@ pub fn part1(input: &InputType) -> OutputType {
             }
         }
     }
-    
+
 
     #[cfg(test)]
     dump_map(&map);

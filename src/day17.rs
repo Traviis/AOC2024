@@ -1,6 +1,6 @@
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 type Coordinate = (i64, i64);
 type InputType = HashMap<Coordinate, i64>;
