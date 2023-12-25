@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-
-use itertools::Itertools;
 use regex::Regex;
 
 type InputType = Vec<Instruction>;
@@ -47,62 +44,68 @@ fn day18_parse(input: &str) -> InputType {
         .collect()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Tile {
-    Dug,
-    DugAndPainted(String),
-}
+//Get the polygon that is the border of the map
+fn get_sparse_border(input: &InputType) -> (Vec<(i64, i64)>,i64) {
 
-fn dump_map(map: &HashMap<(i64, i64), Tile>) {
-    let min_x = *map.keys().map(|(x, _)| x).min().unwrap();
-    let max_x = *map.keys().map(|(x, _)| x).max().unwrap();
-    let min_y = *map.keys().map(|(_, y)| y).min().unwrap();
-    let max_y = *map.keys().map(|(_, y)| y).max().unwrap();
-    if max_x - min_x > 100 || max_y - min_y > 100 {
-        println!("Map too big to print");
-        return;
-    }
+        let mut cur_x = 0;
+        let mut cur_y = 0;
 
-    for y in (min_y..=max_y).rev() {
-        print!("{:3} ", y);
-        for x in min_x..=max_x {
-            match map.get(&(x, y)) {
-                Some(Tile::Dug) => print!("#"),
-                Some(Tile::DugAndPainted(_)) => print!("*"),
-                None => print!("."),
+        let mut boundary_points = 0;
+
+        let mut map = input.iter().map(|inst| {
+            match inst.direction {
+                Direction::Up => cur_y += inst.steps as i64,
+                Direction::Down => cur_y -= inst.steps as i64,
+                Direction::Left => cur_x -= inst.steps as i64,
+                Direction::Right => cur_x += inst.steps as i64,
             }
-        }
-        println!();
-    }
-    println!();
+            boundary_points += inst.steps;
+            (cur_x,cur_y)
+        }).collect::<Vec<(i64,i64)>>();
+
+        //Push 0,0 onto the front
+        map.insert(0,(0,0));
+        (map, boundary_points as i64)
+
+
 }
 
 #[aoc(day18, part1)]
 pub fn part1(input: &InputType) -> OutputType {
     //First use the instructions to dig a trench in the ground, this s hould be a complete circuit
     //and it also paints the edges while you go
-    let mut map = HashMap::new();
 
-    let mut cur_x = 0;
-    let mut cur_y = 0;
+    let (map, boundary_points) = get_sparse_border(input);
 
-    for inst in input {
-        //TODO: Optimize?
-        for _ in 0..inst.steps {
-            match inst.direction {
-                Direction::Up => cur_y += 1,
-                Direction::Down => cur_y -= 1,
-                Direction::Left => cur_x -= 1,
-                Direction::Right => cur_x += 1,
-            }
-            map.entry((cur_x, cur_y))
-                .or_insert(Tile::DugAndPainted(inst.color_code.clone()));
-        }
+
+    //Shoelace formula is .5 * abs(sum(x_i*y_i+1 - x_i+1*y_i))
+    //https://en.wikipedia.org/wiki/Shoelace_formula
+
+    //Turns out we don't care about the color, just the shape
+
+    let n = map.len();
+    let mut area : f64 = 0.0;
+
+    for i in 0..n {
+        let j = (i + 1) % n;
+        area += (map[i].0 * map[j].1) as f64;
+        area -= (map[j].0 * map[i].1) as f64;
     }
 
-    #[cfg(test)]
-    dump_map(&map);
+    area = area.abs() / 2.0;
 
+    let area = area as i64;
+
+    //picks theorum
+    //https://en.wikipedia.org/wiki/Pick%27s_theorem
+    let i = (area - (boundary_points/2)) + 1;
+
+    (i + boundary_points) as u64
+
+
+
+    //This works, but it's really slow, instead let's use the shoelace formula
+    /*
     // Now that we have the border dug out, let's use the same algorithm as before to find the
     // inner parts that need to be filled in (as opposed to flood fill) (knot theory day10)
 
@@ -111,79 +114,8 @@ pub fn part1(input: &InputType) -> OutputType {
     let min_y = *map.keys().map(|(_, y)| y).min().unwrap();
     let max_y = *map.keys().map(|(_, y)| y).max().unwrap();
 
-    let edge_map = map.clone();
 
-    let mut area = edge_map.len() as i64;
 
-    println!("Area: {}", area);
-
-    for y in min_y..=max_y {
-        let mut loop_count = 0;
-        let mut last_x = None;
-        let mut edges_in_row: Vec<_> = edge_map
-            .iter()
-            .filter(|((x, dy), _)| *dy == y)
-            .map(|((x, _), _)| *x)
-            .collect();
-
-        edges_in_row.sort();
-        //Remove consective numbers, that are part of the same horizontal edge, replace them with their min and max
-        edges_in_row = edges_in_row
-            .into_iter()
-            .group_by(|&x| x)
-            .into_iter()
-            .flat_map(|(key, group)| {
-                let count = group.count();
-                match count {
-                    1 => vec![key],
-                    _ => vec![key, key + count as i64 - 1],
-                }
-            })
-            .collect();
-
-        // #[cfg(test)]
-        // {
-        //     println!("Edges in row: {} - {:?}", y, edges_in_row);
-        // }
-        //TODO: Might have to keep track of the previous Y range and check if edge is there or if
-        //it's in a range of a tile that's dug
-        for x in edges_in_row.iter() {
-            //Instead of iterating over the whole map, just look at the edges and count to the next to subtracting the
-            //number of tiles in between
-            let segment = map.get(&(*x, y));
-            let above = map.get(&(*x, y + 1));
-
-            loop_count += 1;
-            //Do they have to be part of the rope test?, we know that it was a perimeter that we
-            //cut, so we can assume there are no holes in between
-            // if above.is_some() {
-            //     loop_count += 1;
-            // }
-            if loop_count % 2 == 0 && last_x.is_some() {
-                let last_x_u = last_x.unwrap();
-
-                let to_add = (x - last_x_u - 1) as i64;
-                #[cfg(test)]
-                println!("Adding {} to area for row {}", to_add, y);
-                area += to_add;
-                //every time you close a loop (loop_count is even, but not 0) and you have a last_x
-                //then you can add the number of tiles between the last_x and the current x to the Area
-                //and set last_x to None
-                for d_x in (last_x_u + 1)..*x {
-                    //For debug, let's fill in the map area
-                    map.insert((d_x, y), Tile::Dug);
-                }
-                last_x = Some(*x);
-                //last_x = None
-            } else if last_x.is_none() {
-                last_x = Some(*x);
-            }
-        }
-    }
-    //TODO: This is almost there, It's breaking on the case of **..***, it should be **##*** but I get Nothing.
-    // It's a bug in how I'm handling loop_count
-
-    /*
     for y in min_y..=max_y {
         let mut loop_count = 0;
         for x in min_x..=max_x {
@@ -197,12 +129,13 @@ pub fn part1(input: &InputType) -> OutputType {
             }
         }
     }
-    */
+    
 
     #[cfg(test)]
     dump_map(&map);
 
-    area as u64
+    map.len() as u64
+    */
 }
 
 fn convert_inst(inst: &Instruction) -> Instruction {
