@@ -84,7 +84,7 @@ fn djik(min_move: i64, max_move: i64, input: &InputType) -> OutputType {
 
         //TODO: You can still move a little less?
 
-        if node.x == max_x && node.y == max_y {
+        if node.x == max_x && node.y == max_y && node.steps >= min_move {
             return node.heat_loss as u64;
         }
 
@@ -98,12 +98,12 @@ fn djik(min_move: i64, max_move: i64, input: &InputType) -> OutputType {
 
         if node.steps < max_move && node.dir != Direction::None {
             let mut new_node = node.clone();
-            new_node.steps += min_move;
+            new_node.steps += 1;
             match node.dir {
-                Direction::North => new_node.y -= min_move,
-                Direction::South => new_node.y += min_move,
-                Direction::East => new_node.x += min_move,
-                Direction::West => new_node.x -= min_move,
+                Direction::North => new_node.y -= 1,
+                Direction::South => new_node.y += 1,
+                Direction::East => new_node.x += 1,
+                Direction::West => new_node.x -= 1,
                 Direction::None => {}
             }
 
@@ -115,43 +115,45 @@ fn djik(min_move: i64, max_move: i64, input: &InputType) -> OutputType {
             }
         }
         //Regardless of going forward, we can also turn, let's just check each direction
-        for (dx, dy) in [(0, -min_move), (0, min_move), (min_move, 0), (-min_move, 0)].iter() {
-            //Don't go back the way you came, also don't go in the forward direction (we already did that)
-            let dx = *dx;
-            let dy = *dy;
-            match node.dir {
-                Direction::North | Direction::South => {
-                    if dx == 0 && (dy == -min_move || dy == min_move) {
-                        continue;
+        if node.steps >= min_move || node.dir == Direction::None {
+            for (dx, dy) in [(0, -1), (0, 1), (1, 0), (-1, 0)].iter() {
+                //Don't go back the way you came, also don't go in the forward direction (we already did that)
+                let dx = *dx;
+                let dy = *dy;
+                match node.dir {
+                    Direction::North | Direction::South => {
+                        if dx == 0 && (dy == -1 || dy == 1) {
+                            continue;
+                        }
                     }
-                }
-                Direction::East | Direction::West => {
-                    if dy == 0 && (dx == -min_move || dx == min_move) {
-                        continue;
+                    Direction::East | Direction::West => {
+                        if dy == 0 && (dx == -1 || dx == 1) {
+                            continue;
+                        }
                     }
+                    Direction::None => {}
                 }
-                Direction::None => {}
-            }
 
-            let new_x = node.x + dx;
-            let new_y = node.y + dy;
+                let new_x = node.x + dx;
+                let new_y = node.y + dy;
 
-            //Push the other valie moves
-            let mut new_node = node.clone();
-            new_node.x = new_x;
-            new_node.y = new_y;
-            new_node.dir = match (dx, dy) {
-                (0, n) if n == -min_move => Direction::North,
-                (0, n) if n == min_move => Direction::South,
-                (n, 0) if n == min_move => Direction::East,
-                (n, 0) if n == -min_move => Direction::West,
-                _ => panic!("Invalid direction"),
-            };
-            new_node.steps = min_move;
-            new_node.heat_loss += *input.get(&(new_node.x, new_node.y)).unwrap_or(&0);
+                //Push the other valie moves
+                let mut new_node = node.clone();
+                new_node.x = new_x;
+                new_node.y = new_y;
+                new_node.dir = match (dx, dy) {
+                    (0, n) if n == -1 => Direction::North,
+                    (0, n) if n == 1 => Direction::South,
+                    (n, 0) if n == 1 => Direction::East,
+                    (n, 0) if n == -1 => Direction::West,
+                    _ => panic!("Invalid direction"),
+                };
+                new_node.steps = 1;
+                new_node.heat_loss += *input.get(&(new_node.x, new_node.y)).unwrap_or(&0);
 
-            if input.get(&(new_node.x, new_node.y)).is_some() {
-                prio_queue.push(Reverse(new_node));
+                if input.get(&(new_node.x, new_node.y)).is_some() {
+                    prio_queue.push(Reverse(new_node));
+                }
             }
         }
     }
