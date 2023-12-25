@@ -1,5 +1,6 @@
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 
 type Coordinate = (i64, i64);
 type InputType = HashMap<Coordinate, i64>;
@@ -27,7 +28,7 @@ enum Direction {
     None,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Copy, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, Ord, Hash)]
 struct Node {
     x: i64,
     y: i64,
@@ -71,30 +72,21 @@ fn djik(min_move: i64, max_move: i64, input: &InputType) -> OutputType {
     while prio_queue.len() > 0 {
         let Reverse(node) = prio_queue.pop().unwrap();
 
-        //Just don't put it into the queue if it's off the map
-        //if input.get(&(node.x, node.y)).is_none() {
-        //    //If you're off the map, nope
-        //    continue;
-        //}
         #[cfg(test)]
         println!("{:?}", node);
-        //println!("\r{} - HL {} Queue Size {}",count, node.heat_loss, prio_queue.len());
-
-        //hack
-
-        //TODO: You can still move a little less?
 
         if node.x == max_x && node.y == max_y && node.steps >= min_move {
             return node.heat_loss as u64;
         }
 
+        let set_key = (node.x, node.y, node.dir, node.steps);
         //We don't need to staore the heat loss,
-        if seen.contains(&node) {
+        if seen.contains(&set_key) {
             //If you've already been here, nope
             continue;
         }
         // You don't actually need the heat loss in here, but just keep it simple
-        seen.insert(node.clone());
+        seen.insert(set_key);
 
         if node.steps < max_move && node.dir != Direction::None {
             let mut new_node = node.clone();
