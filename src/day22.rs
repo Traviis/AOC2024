@@ -1,19 +1,20 @@
 use std::{
     cmp::{max, min},
+    collections::{HashMap, VecDeque},
     fmt::{Display, Formatter},
 };
 
 type InputType = Vec<Brick>;
 type OutputType = i64;
 
-#[derive(Debug, Clone, Copy,PartialEq,Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Brick {
-    x: i64,
-    x_2: i64,
-    y: i64,
-    y_2: i64,
-    z: i64,
-    z_2: i64,
+    x: i64,   //0
+    x_2: i64, //3
+    y: i64,   //1
+    y_2: i64, //4
+    z: i64,   //2
+    z_2: i64, //5
 }
 
 #[aoc_generator(day22)]
@@ -61,10 +62,15 @@ fn settle_bricks(bricks: &mut InputType) {
     for i in 0..bricks.len() {
         let mut max_z = 1;
         //Check all the bricks below
-        for check in bricks.iter().skip(i + 1) {
+        let mut iter_count = 0;
+        for check in bricks.iter() {
+            if iter_count >= i {
+                break; //Is there a better way to do this? This seems dumb
+            }
             if bricks[i].overlap_from_top(check) {
                 max_z = max(max_z, check.z_2 + 1);
             }
+            iter_count += 1;
         }
         bricks[i].z_2 -= bricks[i].z - max_z;
         bricks[i].z = max_z;
@@ -73,22 +79,94 @@ fn settle_bricks(bricks: &mut InputType) {
     bricks.sort_by_key(|brick| brick.z);
 }
 
+fn get_supported_maps(
+    bricks: &InputType,
+) -> (HashMap<usize, Vec<usize>>, HashMap<usize, Vec<usize>>) {
+    let mut k_supports_v = HashMap::new();
+    let mut v_supported_by_k = HashMap::new();
+
+    for (j, upper) in bricks.iter().enumerate() {
+        for (i, lower) in bricks.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            if upper.overlap_from_top(lower) && upper.z == lower.z_2 + 1 {
+                k_supports_v.entry(i).or_insert(vec![]).push(j);
+                v_supported_by_k.entry(j).or_insert(vec![]).push(i);
+            }
+        }
+    }
+
+    (k_supports_v, v_supported_by_k)
+}
+
 #[aoc(day22, part1)]
 pub fn part1(input: &InputType) -> OutputType {
     let mut bricks = input.clone();
 
     //Apply gravity and make all the bricks fall down
     settle_bricks(&mut bricks);
+    let (k_supports_v, v_supported_by_k) = get_supported_maps(&bricks);
 
-    for brick in bricks.iter() {
-        println!("{}", brick);
+    //Knowing this, we can check which bricks we ca nget rid of
+    let mut removeable = 0;
+    for i in 0..bricks.len() {
+        //Check if all the bricks that support this one have at least 2 bricks they supported
+        let mut all_supported = true;
+        for j in k_supports_v.get(&i).unwrap_or(&vec![]) {
+            if v_supported_by_k.get(j).unwrap_or(&vec![]).len() < 2 {
+                all_supported = false;
+                break;
+            }
+        }
+        if all_supported {
+            removeable += 1;
+        }
     }
-    0
+
+    removeable as i64
 }
 
 #[aoc(day22, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    todo!();
+    let mut bricks = input.clone();
+
+    //Apply gravity and make all the bricks fall down
+    settle_bricks(&mut bricks);
+    let (k_supports_v, v_supported_by_k) = get_supported_maps(&bricks);
+
+    let mut total = 0;
+    let empty = vec![];
+
+    for i in 0..bricks.len() {
+        let mut q = k_supports_v
+            .get(&i)
+            .unwrap_or(&empty)
+            .iter()
+            .filter(|j| v_supported_by_k.get(j).unwrap().len() == 1)
+            .collect::<VecDeque<_>>();
+        let mut falling = q.clone().into_iter().cloned().collect::<VecDeque<_>>();
+        falling.push_back(i);
+
+        while let Some(j) = q.pop_front() {
+            for k in k_supports_v.get(&j).unwrap_or(&empty) {
+                if !falling.contains(k) {
+                    if v_supported_by_k
+                        .get(k)
+                        .unwrap()
+                        .iter()
+                        .all(|l| falling.contains(l))
+                    {
+                        falling.push_back(*k);
+                        q.push_back(k);
+                    }
+                }
+            }
+        }
+        total += falling.len() - 1;
+    }
+
+    total as i64
 }
 
 #[cfg(test)]
@@ -130,6 +208,6 @@ mod tests {
 
     #[test]
     fn day22_part2() {
-        assert_eq!(part2(&day22_parse(get_test_input())), 0);
+        assert_eq!(part2(&day22_parse(get_test_input())), 7);
     }
 }
