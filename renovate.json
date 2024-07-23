@@ -1,17 +1,3 @@
 {
-  "extends": [
-    "config:base"  
-  ],
-  "packageRules": [
-    {
-      "updateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
-    },
-    {
-        "groupName": "non-major",
-        "groupSlug": "non-major",
-        "matchPackagePatterns": ["*"],
-        "matchUpdateTypes": ["minor", "patch", "pin", "digest"]
-    }
-  ]
+  "extends": ["gitea>Personal/renovate"]
 }
