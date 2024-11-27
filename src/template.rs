@@ -1,4 +1,3 @@
-
 type InputType = Vec<&str>;
 type OutputType = u64;
 
