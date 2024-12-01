@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
 
-use itertools::Itertools;
-
 type InputType = (Vec<i32>, Vec<i32>);
 type OutputType = i32;
 
@@ -29,31 +27,24 @@ pub fn part1(input: &InputType) -> OutputType {
 
     left.iter()
         .zip(right.iter())
-//        .inspect(|(l, r)| print!("{} - {} = ", l, r))
         .map(|(l, r)| (l - r).abs())
- //       .inspect(|s| println!("{:?}", s))
         .sum::<i32>()
 }
 
 #[aoc(day1, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    let left = input.0.clone();
+    let left = &input.0;
     //Convert to a count of the number of times each element appears
-    let mut right = input.1.clone();
-    right.sort();
+    let right = &input.1;
 
     let dup_list = right.iter().fold(BTreeMap::new(), |mut acc, x| {
         *acc.entry(x).or_insert(0) += 1;
         acc
     });
 
-    left.iter().map(|l| {
-        dup_list.get(l).unwrap_or(&0) * l
-
-    }).sum::<i32>()
-
-
-
+    left.iter()
+        .map(|l| dup_list.get(l).unwrap_or(&0) * l)
+        .sum::<i32>()
 }
 
 #[cfg(test)]
