@@ -37,7 +37,6 @@ fn is_safe(row: &[i64]) -> bool {
 
         last_num = *num;
     }
-
     true
 }
 
@@ -53,24 +52,33 @@ pub fn part1(input: &InputType) -> OutputType {
 // just blast your way thourgh by removing the value each time and checking if it's safe.
 #[aoc(day2, part2)]
 pub fn part2(input: &InputType) -> OutputType {
-    let mut safe_reports = 0;
     //Input list is small, let's brute force it
-    for report in input {
-        if is_safe(report) {
-            safe_reports += 1;
-        } else {
-            //If it's not safe, then go through each one and remove one, then check if it's safe
-            for i in 0..report.len() {
-                let mut report_copy = report.clone();
-                report_copy.remove(i);
-                if is_safe(&report_copy) {
-                    safe_reports += 1;
-                    break;
-                }
-            }
-        }
-    }
-    safe_reports
+    input
+        .iter()
+        .filter(|report| {
+            let mut report = (**report).clone();
+            is_safe(&report)
+                || (0..report.len()).any(|i| {
+                    //If it's not safe, then go through each one and remove one, then check if it's safe
+                    let removed_val = report[i];
+                    report.remove(i);
+                    if is_safe(&report) {
+                        true
+                    } else {
+                        report.insert(i, removed_val);
+                        false
+                    }
+                    //I was doing a clone here on the report for every iteration of the insertion
+                    //check, however, benchmarking shows that a single clone at the start is ~17%
+                    //faster, even with insertions and removals. The code is harder to read, but might
+                    //as well play a little golf.
+                    // The original (in the any function):
+                    // let mut report_copy = (*report).clone();
+                    // report_copy.remove(i);
+                    // is_safe(&report_copy)
+                })
+        })
+        .count() as u64
 }
 
 #[cfg(test)]
