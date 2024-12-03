@@ -28,9 +28,10 @@ pub fn part2(input: &InputType) -> OutputType {
     let mut running_total = 0;
 
     for cap in re.captures_iter(input) {
-        if cap.get(0).is_some() && cap.get(0).unwrap().as_str() == "do()" {
+        let first_cap = cap.get(0).unwrap().as_str();
+        if first_cap == "do()" {
             enabled = true;
-        } else if cap.get(0).is_some() && cap.get(0).unwrap().as_str() == "don't()" {
+        } else if first_cap == "don't()" {
             enabled = false;
         } else if enabled {
             let a = cap[3].parse::<u64>().unwrap();
@@ -40,7 +41,6 @@ pub fn part2(input: &InputType) -> OutputType {
     }
 
     running_total
-
 }
 
 #[cfg(test)]
