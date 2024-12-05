@@ -10,14 +10,15 @@ fn day3_parse(input: &str) -> InputType {
 
 #[aoc(day3, part1)]
 pub fn part1(input: &InputType) -> OutputType {
+    let re = Regex::new(r"mul\(([0-9]{1,3}),([0-9]{1,3})\)").unwrap();
 
-        let re = Regex::new(r"mul\(([0-9]{1,3}),([0-9]{1,3})\)").unwrap();
-
-        re.captures_iter(input).map(|cap| {
+    re.captures_iter(input)
+        .map(|cap| {
             let a = cap[1].parse::<u64>().unwrap();
             let b = cap[2].parse::<u64>().unwrap();
             a * b
-        }).sum()
+        })
+        .sum()
 }
 
 #[aoc(day3, part2)]

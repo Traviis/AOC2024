@@ -93,14 +93,18 @@ pub fn part1(input: &InputType) -> OutputType {
 pub fn part2(input: &InputType) -> OutputType {
     let mut count = 0;
     // Now we need to find the Crosses, but the letters can be jumbled. To do this, we can find all A's in the map, and then check the diagnols for M's and S's.
-    for ((x,y), c) in input.iter() {
+    for ((x, y), c) in input.iter() {
         if *c == 'A' {
-            let bottom_left = input.get(&(x-1, y+1));
-            let bottom_right = input.get(&(x+1, y+1));
-            let top_left = input.get(&(x-1, y-1));
-            let top_right = input.get(&(x+1, y-1));
+            let bottom_left = input.get(&(x - 1, y + 1));
+            let bottom_right = input.get(&(x + 1, y + 1));
+            let top_left = input.get(&(x - 1, y - 1));
+            let top_right = input.get(&(x + 1, y - 1));
 
-            if bottom_left.is_none() || bottom_right.is_none() || top_left.is_none() || top_right.is_none() {
+            if bottom_left.is_none()
+                || bottom_right.is_none()
+                || top_left.is_none()
+                || top_right.is_none()
+            {
                 //If you're on an edge, skip completely
                 continue;
             }
@@ -108,17 +112,18 @@ pub fn part2(input: &InputType) -> OutputType {
             //Clean up and unwrap
             let bottom_left = *bottom_left.unwrap();
             let bottom_right = *bottom_right.unwrap();
-            let top_left = *top_left.unwrap(); 
+            let top_left = *top_left.unwrap();
             let top_right = *top_right.unwrap();
 
             //Check the slashes, both must be true
-            let forward_slash_good = (bottom_right == 'M' && top_left == 'S') || (bottom_right == 'S' && top_left == 'M');
-            let back_slash_good = (bottom_left == 'M' && top_right == 'S') || (bottom_left == 'S' && top_right == 'M');
+            let forward_slash_good = (bottom_right == 'M' && top_left == 'S')
+                || (bottom_right == 'S' && top_left == 'M');
+            let back_slash_good = (bottom_left == 'M' && top_right == 'S')
+                || (bottom_left == 'S' && top_right == 'M');
 
             if forward_slash_good && back_slash_good {
                 count += 1;
             }
-
         }
     }
     count

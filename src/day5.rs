@@ -3,35 +3,29 @@ use std::collections::BTreeMap;
 type InputType = (BTreeMap<u64, Vec<u64>>, Vec<Updates>);
 type OutputType = u64;
 
-// .0 must be < .1
 type Updates = Vec<u64>;
 
 #[aoc_generator(day5)]
 fn day5_parse(input: &str) -> InputType {
-    let mut parts = input.split("\n\n");
-    let rules = parts.next().unwrap().lines().fold(
-        BTreeMap::new(),
-        |mut acc: BTreeMap<u64, Vec<u64>>, l| {
-            let mut line_splits = l.split("|");
-            let num_1 = line_splits.next().unwrap().parse().unwrap();
-            let num_2 = line_splits.next().unwrap().parse().unwrap();
-            //Interesting thing from clippy here, it wanted me to use or_default instead of
-            //or_insert, but then that confuses the type system and it makes me have to specify the
-            //type for BTreeMap (in the closure) which is kind of amusing since it should be able
-            //to determine the type of rules from the function signature...
-            acc.entry(num_1).or_default().push(num_2);
-            acc
-        },
-    );
+    let mut sections = input.split("\n\n");
 
-    let updates = parts
-        .next()
-        .unwrap()
-        .lines()
-        .map(|l| l.split(",").map(|n| n.parse().unwrap()).collect())
-        .collect();
-
-    (rules, updates)
+    (
+        sections
+            .next()
+            .unwrap()
+            .lines()
+            .fold(BTreeMap::new(), |mut acc, l| {
+                let nums = l.split("|").map(|n| n.parse().unwrap()).collect::<Vec<_>>();
+                acc.entry(nums[0]).or_default().push(nums[1]);
+                acc
+            }),
+        sections
+            .next()
+            .unwrap()
+            .lines()
+            .map(|l| l.split(",").map(|n| n.parse().unwrap()).collect())
+            .collect(),
+    )
 }
 
 fn is_valid(rules: &BTreeMap<u64, Vec<u64>>, updates: &[u64]) -> bool {
@@ -86,11 +80,11 @@ pub fn part2(input: &InputType) -> OutputType {
         .iter()
         .filter(|update| !is_valid(rules, update))
         //fix_update short circuits and just gives me the middle value
-        .map(|update| fix_update(rules, update))
+        .map(|update| fix_update_and_find_mid(rules, update))
         .sum::<u64>()
 }
 
-fn fix_update(rules: &BTreeMap<u64, Vec<u64>>, update: &[u64]) -> u64 {
+fn fix_update_and_find_mid(rules: &BTreeMap<u64, Vec<u64>>, update: &[u64]) -> u64 {
     let mut update = update.to_owned();
 
     //We have all the rules, fix them by moving the value in front of all the rules it's violating,
@@ -108,6 +102,8 @@ fn fix_update(rules: &BTreeMap<u64, Vec<u64>>, update: &[u64]) -> u64 {
             None => &vec![], //If there are no rules, we can't be violating them
         };
 
+        //It only makes sense to check just the ones to the left of where we are, because those are
+        //the only ones we can be violating.
         let previous = &update[0..idx];
         let mut violation_indexes = vec![];
 
@@ -120,7 +116,9 @@ fn fix_update(rules: &BTreeMap<u64, Vec<u64>>, update: &[u64]) -> u64 {
         if !violation_indexes.is_empty() {
             //We know we are violating the rule
             let lowest = violation_indexes.iter().min().unwrap(); //Find the lowest violator
+                                                                  //Insert the value right to the left of the lowest violator (remove first!)
             update.remove(idx);
+            //update.insert(*lowest, *num);
             update.insert(*lowest, *num);
         }
     }
@@ -171,11 +169,11 @@ mod tests {
 
         let update = vec![61, 13, 29];
         assert!(!is_valid(&rules, &update));
-        assert_eq!(fix_update(&rules, &update), 29);
+        assert_eq!(fix_update_and_find_mid(&rules, &update), 29);
 
         let update = vec![75, 97, 47, 61, 53];
         assert!(!is_valid(&rules, &update));
-        assert_eq!(fix_update(&rules, &update), 47);
+        assert_eq!(fix_update_and_find_mid(&rules, &update), 47);
     }
 
     #[test]
