@@ -9,11 +9,9 @@ type Updates = Vec<u64>;
 #[aoc_generator(day5)]
 fn day5_parse(input: &str) -> InputType {
     let mut parts = input.split("\n\n");
-    let rules = parts
-        .next()
-        .unwrap()
-        .lines()
-        .fold(BTreeMap::new(), |mut acc : BTreeMap<u64,Vec<u64>>, l| {
+    let rules = parts.next().unwrap().lines().fold(
+        BTreeMap::new(),
+        |mut acc: BTreeMap<u64, Vec<u64>>, l| {
             let mut line_splits = l.split("|");
             let num_1 = line_splits.next().unwrap().parse().unwrap();
             let num_2 = line_splits.next().unwrap().parse().unwrap();
@@ -23,7 +21,8 @@ fn day5_parse(input: &str) -> InputType {
             //to determine the type of rules from the function signature...
             acc.entry(num_1).or_default().push(num_2);
             acc
-        });
+        },
+    );
 
     let updates = parts
         .next()
@@ -129,7 +128,6 @@ fn fix_update(rules: &BTreeMap<u64, Vec<u64>>, update: &[u64]) -> u64 {
     //Since we know we only care about the middle digit, just return it here instead of doing it elsewhere
     update[update.len() / 2]
 }
-
 
 #[cfg(test)]
 mod tests {
