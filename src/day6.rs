@@ -31,27 +31,6 @@ pub enum Location {
     Guard(GuardFacing),
 }
 
-#[derive(Clone, Copy)]
-pub enum Trail {
-    NorthSouth, // |
-    EastWest,   // -
-    Cross,      // +
-    Unknown,    //?
-    Turn,       //T
-}
-
-impl Trail {
-    fn into_char(self) -> char {
-        match self {
-            Trail::NorthSouth => '|',
-            Trail::EastWest => '-',
-            Trail::Cross => '+',
-            Trail::Unknown => '?',
-            Trail::Turn => 'T',
-        }
-    }
-}
-
 impl GuardFacing {
     fn from_char(c: char) -> GuardFacing {
         match c {
@@ -81,7 +60,8 @@ impl GuardFacing {
         }
     }
 
-    fn into_char(&self) -> char {
+    #[allow(dead_code)]
+    fn into_char(self) -> char {
         match self {
             GuardFacing::North => '^',
             GuardFacing::East => '>',
@@ -138,6 +118,7 @@ fn day6_parse(input: &str) -> InputType {
 }
 
 impl Map {
+    #[allow(dead_code)]
     fn dump_map(&self, corner_x: i32, corner_y: i32, obstacle_x: i32, obstacle_y: i32) {
         for y in 0..=self.max_y {
             for x in 0..=self.max_x {
@@ -318,7 +299,7 @@ impl Map {
 
         //Now, add an obstacle to each visitied location, and see if we loop
         for possible_obstacle in visited_locations {
-            if let Some(obstacle) = map.find_infinite_loop(possible_obstacle) {
+            if map.find_infinite_loop(possible_obstacle).is_some() {
                 //println!("Found a possible location at {},{}", obstacle.0, obstacle.1);
                 possible_locations += 1;
             }
