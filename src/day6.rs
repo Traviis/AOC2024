@@ -146,7 +146,7 @@ impl Map {
         }
     }
 
-    fn find_infinite_loop(&self, obstacle: (i32,i32)) -> Option<(i32,i32)> {
+    fn find_infinite_loop(&self, obstacle: (i32,i32)) -> bool {
 
         //I don't know why my original code works for the test case, but not my input, instead of trying to figure out why, just brute force this.
 
@@ -154,64 +154,12 @@ impl Map {
         let mut map = self.clone();
         //Inject our fake obstacle
         map.map.insert(obstacle, Location::Wall);
-        map.guard = map.initial_guard_position;
+        map.guard = map.initial_guard_position; //Reset
+
         #[cfg(test)]
         map.dump_map(-100, -100, obstacle.0, obstacle.1);
-        let looped = map.simulate_until_exit();
-        if looped {
-            Some(obstacle)
-        } else {
-            None
-        }
 
-        /*
-        //Part 2, Check if placing an obstacle right in front of the guard would complete a cycle
-        //Let's just check every move
-        let ((x, y), current_guard_facing) = self.guard;
-        //Simulate turning right
-        let new_facing = current_guard_facing.turn_right();
-
-        //The theoretical position that the guard would turn right would be x, y, and facing new_facing
-        //From there, cast a ray until you hit an obstacle
-        let (ray_dx, ray_dy) = new_facing.get_delta_step();
-
-        let mut ray_x = x;
-        let mut ray_y = y;
-
-        // This new possible obstacle (and thus turn) would require that ray_x and ray_y eventually hit an obstacle
-        while !self.map.contains_key(&(ray_x, ray_y))
-            && ray_x >= 0
-                && ray_x <= self.max_x
-                && ray_y >= 0
-                && ray_y <= self.max_y
-        {
-            ray_x += ray_dx;
-            ray_y += ray_dy;
-        }
-
-        //if ray_x == self.initial_guard_position.0.0 && ray_y == self.initial_guard_position.0.1 {
-        //    // If we're at the initial position, don't count it
-        //    break;
-        //}
-
-        //step back one; these are coordinates of the obstacle
-        ray_x -= ray_dx;
-        ray_y -= ray_dy;
-
-        //println!("Finalized ray_cast {} {}", ray_x, ray_y);
-        //self.dump_map(x,y,-100,100);
-
-        let (dx, dy) = current_guard_facing.get_delta_step();
-        //We know we hit a box if there is a wall right in front of the guard AND that location has already been visited
-        if self.visited.contains_key(&(ray_x, ray_y)) && !(ray_x == x && ray_y == y) {
-            self.possible_obstacle_locations.insert((x + dx, y + dy));
-            #[cfg(test)]
-            {
-                println!("Found a possible location at {},{}", x + dx, y + dy);
-                self.dump_map(x, y, x + dx, y + dy);
-            }
-        }
-        */
+        map.simulate_until_exit()
     }
 
     //Return true if we got stuck in a loop
@@ -246,8 +194,6 @@ impl Map {
                         return false; //Not a loop
                     } else {
                         //Move forward
-
-                        //Then move forward
                         self.guard = ((next_x, next_y), facing);
                         *self.visited.entry((next_x, next_y)).or_insert(0) += 1;
                         let visits = self.visited.get(&(next_x, next_y)).unwrap();
@@ -256,7 +202,6 @@ impl Map {
                         if *visits > LOOP_THRESHOLD {
                             return true;
                         }
-
 
                     }
                 }
@@ -280,12 +225,6 @@ impl Map {
 
 #[aoc(day6, part2)]
     pub fn part2(input: &InputType) -> OutputType {
-        //I overcomplicated this, there are not multiple guards, so I an just ignore that stuff.
-
-        //We need to detect a box, and then put items in that would create it, which, given the rule,
-        //means that the box need to be bounded by an object placed in front of the guard, that would
-        //force him to turn right, one of the box corners, that doesn't currently have an object.
-
         let mut map = input.clone();
 
         //First, do part one,
@@ -295,21 +234,8 @@ impl Map {
         let mut visited_locations = map.visited.keys().cloned().collect::<BTreeSet<(i32, i32)>>();
         visited_locations.remove(&map.initial_guard_position.0); //Except the initial position
 
-        let mut possible_locations = 0;
+        visited_locations.iter().filter(|(x,y)| map.find_infinite_loop((*x,*y))).count() as u64
 
-        //Now, add an obstacle to each visitied location, and see if we loop
-        for possible_obstacle in visited_locations {
-            if map.find_infinite_loop(possible_obstacle).is_some() {
-                //println!("Found a possible location at {},{}", obstacle.0, obstacle.1);
-                possible_locations += 1;
-            }
-        }
-
-
-        // We have the turn locations from the simulation, 3 of those can form parts of the box, and it
-        // should intersect with the first position at some point, there, we can put in a box
-
-        possible_locations
     }
 
 #[cfg(test)]
@@ -334,26 +260,8 @@ impl Map {
         fn day6_part1() {
             assert_eq!(part1(&day6_parse(get_test_input())), 41);
         }
-        //Current
-
-        //Found a possible location at 3,6 V
-        //Found a possible location at 6,7 V
-        //Found a possible location at 3,8
-        //Found a possible location at 1,8
-        //Found a possible location at 7,7 //Out of order?
-        //Found a possible location at 7,9
-
-        //TODO: I'm getting the right answer, and even the correct coordinates, but I'm discovering
-        //them "out of order" from the example, so something is probably subtley wrong here,
         #[test]
         fn day6_part2() {
-            //Should be turns obstacles at:
-            // 3,6
-            // 6,7
-            // 7,7
-            // 1,8
-            // 3,8
-            // 7,9
             assert_eq!(part2(&day6_parse(get_test_input())), 6);
         }
     }
