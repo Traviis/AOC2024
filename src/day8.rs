@@ -1,42 +1,55 @@
-type InputType = (usize, usize, BTreeMap<(u64, u64), char>);
+type InputType = (usize, usize, BTreeMap<Point, char>);
 type OutputType = u64;
 
 use std::collections::{BTreeMap, BTreeSet};
 
 #[aoc_generator(day8)]
 fn day8_parse(input: &str) -> InputType {
-    input.lines().enumerate().fold(
-        (0, 0, BTreeMap::new()),
-        |(max_x, _max_y, mut map), (y, line)| {
-            line.chars().enumerate().for_each(|(x, c)| {
-                if c != '.' {
-                    map.insert((x as u64, y as u64), c);
-                }
-            });
-            (max_x.max(line.len()), y, map)
-        },
-    )
+
+    let map: BTreeMap<Point, char> = input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.chars()
+                .enumerate()
+                .map(move |(x, c)| (Point::new(x as i64 , y as i64 ), c))
+        })
+        .collect();
+
+    //Just get lazy....
+    let max_x = map.keys().map(|p| p.x).max().unwrap();
+    let max_y = map.keys().map(|p| p.y).max().unwrap();
+
+    // Just erase the .s
+    let map = map
+        .into_iter()
+        .filter(|(_, c)| *c != '.')
+        .collect::<BTreeMap<Point, char>>();
+    // Yea, I know this is a lame way to do this.
+
+    (max_x as usize, max_y as usize, map)
+
 }
 
 #[allow(dead_code)]
 fn dump_map(
     max_x: usize,
     max_y: usize,
-    map: &BTreeMap<(u64, u64), char>,
-    highlights: &BTreeSet<(u64, u64)>,
-    anti_nodes: BTreeMap<(u64, u64), char>,
+    map: &BTreeMap<Point, char>,
+    highlights: &BTreeSet<Point>,
+    anti_nodes: &BTreeSet<Point>,
 ) {
     let max_x = max_x as u64;
     let max_y = max_y as u64;
 
-    use ansi_term::Color::{Green, Red};
+    use ansi_term::Color::Green;
 
     for y in 0..=max_y {
         for x in 0..=max_x {
-            if let Some(a) = anti_nodes.get(&(x, y)) {
-                print!("{}", Red.paint(a.to_string()));
-            } else if let Some(c) = map.get(&(x, y)) {
-                if highlights.contains(&(x, y)) {
+            if anti_nodes.get(&Point::new_u(x , y )).is_some() {
+                print!("#");
+            } else if let Some(c) = map.get(&Point::new_u(x , y )) {
+                if highlights.contains(&Point::new_u(x, y)) {
                     print!("{}", Green.paint(c.to_string()));
                 } else {
                     print!("{}", c);
@@ -49,56 +62,91 @@ fn dump_map(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct Point {
+    x: i64,
+    y: i64
+}
+
+impl Point {
+    fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+
+    fn new_u(x: u64, y: u64) -> Self {
+        Self {
+            x: x as i64,
+            y: y as i64,
+        }
+    }
+
+    fn dist(&self, other: &Self) -> Self {
+        Point::new(self.x - other.x, self.y - other.y)
+    }
+
+    fn in_bounds(&self, max_x: i64, max_y: i64) -> bool {
+        self.x >= 0 && self.y >= 0 && self.x <= max_x && self.y <= max_y
+    }
+
+    fn add(&self, other: &Self) -> Self {
+        Point::new(self.x + other.x, self.y + other.y)
+    }
+}
+
 fn solve(input: &InputType, part2: bool) -> OutputType {
     //Antinodes can occur on the same spot
-    let mut anti_nodes: BTreeMap<(u64, u64), BTreeSet<char>> = BTreeMap::new();
+    let mut anti_nodes: BTreeSet<Point> = BTreeSet::new();
 
     let max_x = input.0;
     let max_y = input.1;
     let map = &input.2;
 
-    for ((x, y), c) in map.iter() {
+    for (p, c) in map.iter() {
         //Let's find all the other frequencies that match, they need not be on a perfect 1:1 line, you need to care about the rise over run
 
-        let x = *x;
-        let y = *y;
+
+        let x = p.x;
+        let y = p.y;
         let c = *c;
 
-        let mut other_towers: BTreeSet<(u64, u64)> = BTreeSet::new();
+        let mut other_towers: BTreeSet<Point> = BTreeSet::new();
 
-        for ((x2, y2), c2) in map.iter() {
+        //Find other towers
+        for (p2, c2) in map.iter() {
             if *c2 != c {
                 continue;
             }
 
-            if x == *x2 && y == *y2 {
+            if x == p2.x && y == p2.y {
                 //Skip yourself
                 continue;
             }
-            other_towers.insert((*x2, *y2));
+            other_towers.insert(Point::new(p2.x, p2.y));
         }
 
         #[cfg(test)]
         {
             println!("original tower + other towers: ({},{}): {}", x, y, c);
-            dump_map(max_x, max_y, map, &other_towers, BTreeMap::new());
+            dump_map(max_x, max_y, map, &other_towers, &BTreeSet::new());
         }
 
-        for (x2, y2) in other_towers.iter() {
-            let rise = (y as i64 - *y2 as i64).abs();
-            let run = (x as i64 - *x2 as i64).abs();
+        for p2 in other_towers.iter() {
+            let x2 = p2.x;
+            let y2 = p2.y;
+            let rise = (y - y2 ).abs();
+            let run = (x - x2).abs();
             // Inject an antinode on the opposite of the rise and run for each tower
             // For the first tower
 
             //Having a hard time visualizing this, I think I need to be concious of the direction
-            let going_up = *y2 > y;
-            let going_right = *x2 > x;
+            let going_up = y2 > y;
+            let going_right = x2 > x;
 
             let rise = if going_up { rise } else { -rise };
             let run = if going_right { run } else { -run };
 
-            let mut dx = vec![x as i64 - run, x as i64 + run];
-            let mut dy = vec![y as i64 - rise, y as i64 + rise];
+            let mut dx = vec![x - run, x + run];
+            let mut dy = vec![y - rise, y + rise];
 
             if part2 {
                 // These continue on by the run and rise until they're off the edge
@@ -145,7 +193,7 @@ fn solve(input: &InputType, part2: bool) -> OutputType {
                 if t_x >= 0 && t_y >= 0 && t_x <= max_x as i64 && t_y <= max_y as i64 {
                     //Antinodes can not occur outside the map NOR can they occur on the same spot of a tower that is the same frequency
                     let mut insert = false;
-                    if let Some(c2) = map.get(&(t_x as u64, t_y as u64)) {
+                    if let Some(c2) = map.get(&Point::new(t_x, t_y)) {
                         //In part2, we don't care if there is an antenna in the same place
                         if c != *c2 || part2 {
                             //There is something here, but it's not the same frequency
@@ -156,10 +204,7 @@ fn solve(input: &InputType, part2: bool) -> OutputType {
                     }
 
                     if insert {
-                        anti_nodes
-                            .entry((t_x as u64, t_y as u64))
-                            .or_default()
-                            .insert(c);
+                        anti_nodes.insert(Point::new(t_x, t_y));
                     }
                 }
             }
@@ -174,10 +219,7 @@ fn solve(input: &InputType, part2: bool) -> OutputType {
                 max_y,
                 map,
                 &other_towers,
-                anti_nodes
-                    .iter()
-                    .map(|(k, v)| (*k, *v.iter().next().unwrap()))
-                    .collect(),
+                &anti_nodes
             );
         }
     }
