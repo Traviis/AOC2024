@@ -6,6 +6,7 @@ enum Oper {
     Add,
     Multiply,
     Concat, // For concat, we just add the number to the previous number (AS A STRING)
+    // Sure glad I didn't implement this with binary...
 }
 
 type Equation = (u64, Vec<u64>);
@@ -37,7 +38,6 @@ fn valid_line(equa: &Equation, part2: bool) -> bool {
         if current == equa.0 {
             return true;
         }
-
 
     }
 
