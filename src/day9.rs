@@ -27,11 +27,12 @@ impl fmt::Display for HardDrive {
 
 impl HardDrive {
     fn checksum(&self) -> u64 {
-        //  We could iterate through the list and do fancy math ORRRR we could just print out the values from my debug function and go from there
-
         let mut idx: u64 = 0;
         let mut running_total: u64 = 0;
-        let mut c_idx: u64 = 0; //This counts the current index of the files if they were laid out on (printed)
+        //This counts the current index of the files if they were laid out (printed), since that's
+        //used for determining index of the checksum, but we don't want to actually print it out
+        //into memory
+        let mut c_idx: u64 = 0;
 
         while idx < self.len() as u64 {
             match self[idx as usize] {
@@ -72,12 +73,17 @@ impl DerefMut for HardDrive {
 
 impl fmt::Display for Space {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let val = match self {
-            Space::Empty(size) => (0..*size).map(|_| ".").collect::<String>(),
-            Space::File(id, size) => (0..*size).map(|_| format!("{}", *id)).collect::<String>(),
+        match self {
+            Space::Empty(size) => {
+                (0..*size).for_each(|_| write!(f, ".").unwrap());
+                Ok(())
+            }
+            Space::File(id, size) => {
+                (0..*size).for_each(|_| write!(f, "{}", id).unwrap());
+                Ok(())
+            }
             // The real input has IDs > 9... so don't use this for the real input
-        };
-        write!(f, "{}", val)
+        }
     }
 }
 
